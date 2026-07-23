@@ -64,6 +64,19 @@
   export let focusPadding = 80;
   export let focusMaxZoom = 6;
 
+  // ── "New vs old" coloring (surge graphic, feat/surge-map-graphic) ───────────
+  // A NON-DEFAULT variant. In "model" mode (the default, everywhere on the site)
+  // dots are colored by primary_model exactly as before. In "newOld" mode each
+  // dot is colored by whether its signing is recent: signed_date >= threshold →
+  // `newColor`, else `oldColor`. The reveal animation (revealProgress 0→1) fades
+  // + grows the NEW dots in, keyed by a per-dot `seq` (normalized signing order),
+  // while OLD dots stay fully visible throughout.
+  export let colorMode: "model" | "newOld" = "model";
+  export let newOldThreshold = "2026-04-01";
+  export let newColor = "#E8792B"; // orange — recent signings (the subject)
+  export let oldColor = "#64748b"; // slate — the pre-surge baseline
+  export let revealProgress = 1; // 0 = old dots only, 1 = all new dots in
+
   let container: HTMLDivElement;
   let map: any = null;
   const isMobile = browser && window.matchMedia("(max-width: 640px)").matches;
@@ -258,6 +271,27 @@
     return (y - TIMELINE_EPOCH_YEAR) * 12 + (m - 1) + (day - 1) / 31;
   };
 
+  // ── new/old helpers (colorMode === "newOld") ────────────────────────────────
+  // ISO date strings compare lexically, so a plain >= against the threshold is a
+  // correct "signed on or after" test. `seq` maps each new signing to [0,1] by
+  // day within the reveal window (threshold → newest new signing), so the sweep
+  // reveals dots roughly in signing order.
+  const isNewSigned = (d?: string | null): boolean =>
+    !!d && d.length >= 10 && d >= newOldThreshold;
+  const dayNum = (d: string): number => Date.parse(d + "T00:00:00Z") / 86_400_000;
+  $: newMaxDate = (() => {
+    if (colorMode !== "newOld") return newOldThreshold;
+    let max = newOldThreshold;
+    for (const a of [...agencies, ...terminatedAgencies])
+      if (isNewSigned(a.signed_date) && a.signed_date! > max) max = a.signed_date!;
+    return max;
+  })();
+  $: newSpanDays = Math.max(1, dayNum(newMaxDate) - dayNum(newOldThreshold));
+  const seqOf = (d?: string | null): number => {
+    if (!isNewSigned(d)) return 0;
+    return Math.min(1, Math.max(0, (dayNum(d!) - dayNum(newOldThreshold)) / newSpanDays));
+  };
+
   $: geojson = {
     type: "FeatureCollection",
     features: [...agencies, ...terminatedAgencies]
@@ -276,9 +310,19 @@
             models: a.models.join(", "),
             population: a.population ?? 0,
             officer_ct: a.lee?.officer_ct ?? 0,
-            color: MODEL_COLORS[a.primary_model ?? ""] ?? MODEL_FALLBACK,
+            color:
+              colorMode === "newOld"
+                ? isNewSigned(a.signed_date)
+                  ? newColor
+                  : oldColor
+                : MODEL_COLORS[a.primary_model ?? ""] ?? MODEL_FALLBACK,
             signed_idx: signedDateIdx(a.signed_date),
             terminated_idx: terminatedDateIdx(a.terminated_date),
+            // Extra props only in newOld mode, so "model" mode's feature shape is
+            // unchanged (the reveal expressions + sort key key off these).
+            ...(colorMode === "newOld"
+              ? { is_new: isNewSigned(a.signed_date), seq: seqOf(a.signed_date) }
+              : {}),
           },
         };
       }),
@@ -336,8 +380,40 @@
     return ["interpolate", ["linear"], ["zoom"], ...flat];
   };
 
+  // ── newOld reveal (colorMode === "newOld") ──────────────────────────────────
+  // A soft leading edge sweeps across the new dots in signing order. For a new
+  // dot with normalized order `seq`, its local reveal = clamp((p1 - seq)/BAND),
+  // where p1 = revealProgress*(1+BAND) so p=1 lands every new dot fully in. Old
+  // dots (is_new false) skip the sweep and stay at full opacity/size.
+  const REVEAL_BAND = 0.32;
+  const NEW_MIN_SCALE = 0.35; // new dots grow in from this fraction of full radius
+  const localRevealExpr = (progress: number): any => {
+    const p1 = progress * (1 + REVEAL_BAND);
+    return ["max", 0, ["min", 1, ["/", ["-", p1, ["get", "seq"]], REVEAL_BAND]]];
+  };
+  const newOldOpacityExpr = (progress: number): any => [
+    "*",
+    BASE_OPACITY,
+    ["case", ["get", "is_new"], localRevealExpr(progress), 1],
+  ];
+  const newOldRadiusExpr = (progress: number): any => {
+    if (!radiusStops.length) return 1;
+    const scale: any = [
+      "case",
+      ["get", "is_new"],
+      ["+", NEW_MIN_SCALE, ["*", 1 - NEW_MIN_SCALE, localRevealExpr(progress)]],
+      1,
+    ];
+    const flat: any[] = [];
+    for (const [z, r] of radiusStops) flat.push(z, ["*", scale, r]);
+    return ["interpolate", ["linear"], ["zoom"], ...flat];
+  };
+
   $: if (map && map.getLayer && map.getLayer("agencies")) {
-    if (cursorIdx == null) {
+    if (colorMode === "newOld") {
+      map.setPaintProperty("agencies", "circle-opacity", ["*", newOldOpacityExpr(revealProgress), dimExpr]);
+      map.setPaintProperty("agencies", "circle-radius", newOldRadiusExpr(revealProgress));
+    } else if (cursorIdx == null) {
       map.setPaintProperty("agencies", "circle-opacity", ["*", BASE_OPACITY, dimExpr]);
       map.setPaintProperty("agencies", "circle-radius", baseRadiusExpression());
     } else {
@@ -724,16 +800,28 @@
         [10, radius(5, 30)],
         [13, radius(8, 40)],
       ];
-      const initialRadius = cursorIdx == null
-        ? baseRadiusExpression()
-        : radiusWithFade(cursorIdx);
-      const initialOpacity = cursorIdx == null
-        ? ["*", BASE_OPACITY, dimExpr]
-        : ["*", opacityWithFade(cursorIdx), dimExpr];
+      const initialRadius =
+        colorMode === "newOld"
+          ? newOldRadiusExpr(revealProgress)
+          : cursorIdx == null
+            ? baseRadiusExpression()
+            : radiusWithFade(cursorIdx);
+      const initialOpacity =
+        colorMode === "newOld"
+          ? ["*", newOldOpacityExpr(revealProgress), dimExpr]
+          : cursorIdx == null
+            ? ["*", BASE_OPACITY, dimExpr]
+            : ["*", opacityWithFade(cursorIdx), dimExpr];
       map.addLayer({
         id: "agencies",
         type: "circle",
         source: "agencies",
+        // newOld mode draws new (orange) dots above old (slate) ones so the
+        // surge reads on top in dense clusters. Omitted in model mode → the
+        // layer definition is unchanged there.
+        ...(colorMode === "newOld"
+          ? { layout: { "circle-sort-key": ["case", ["get", "is_new"], 1, 0] as any } }
+          : {}),
         paint: {
           "circle-color": ["get", "color"],
           // Slight stroke = bg color: knocks out a thin gap between

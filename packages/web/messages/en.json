@@ -322,5 +322,10 @@
   "video_states": "states",
   "video_territories_note": "plus Guam & the N. Mariana Islands",
   "video_source": "Source: ICE 287(g) rosters, archived by Elijah Appelson",
-  "video_data_as_of": "Data as of"
+  "video_data_as_of": "Data as of",
+  "surge_title": "The 287(g) spring surge",
+  "surge_subtitle": "new agreements signed since April 2026",
+  "surge_legend_old": "Signed before April",
+  "surge_legend_new": "Signed since April",
+  "surge_strip_heading": "Where the surge landed — new signings per state"
 }

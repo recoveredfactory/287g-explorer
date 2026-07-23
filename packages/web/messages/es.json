@@ -322,5 +322,10 @@
   "video_states": "estados",
   "video_territories_note": "más Guam y las Islas Marianas del Norte",
   "video_source": "Fuente: registros 287(g) de ICE, archivados por Elijah Appelson",
-  "video_data_as_of": "Datos al"
+  "video_data_as_of": "Datos al",
+  "surge_title": "La ola de 287(g) de esta primavera",
+  "surge_subtitle": "nuevos acuerdos firmados desde abril de 2026",
+  "surge_legend_old": "Firmados antes de abril",
+  "surge_legend_new": "Firmados desde abril",
+  "surge_strip_heading": "Dónde aterrizó la ola — nuevas firmas por estado"
 }
