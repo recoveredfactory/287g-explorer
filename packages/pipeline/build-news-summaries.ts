@@ -169,15 +169,57 @@ function firstRow(result: ProgramResult, name: string): Record<string, unknown> 
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : String(v))
 
+// ── Live-roster counts for the roster tokens ─────────────────────────────────
+// {{agency_count}} / {{agreement_count}} / {{abs_rank}} are filled from OUR
+// published roster (agency_index.json), counted the SAME way the state page's own
+// card counts — so the blurb can never contradict the card above it. Rules:
+//   • agency_count    = active agencies in the state (the `agencies.length`
+//                       headline rule — NOT ORI-deduped; see homeData #92/#118)
+//   • agreement_count = sum of each active agency's current models (the active
+//                       agency–model basis the trend uses, #162 → "distinct agreements")
+//   • abs_rank        = the state's rank by agency_count across the country
+type RosterCounts = { agency_count: number; agreement_count: number; abs_rank: number }
+let ROSTER_CACHE: Map<string, RosterCounts> | null = null
+function loadRoster(): Map<string, RosterCounts> {
+  if (ROSTER_CACHE) return ROSTER_CACHE
+  const map = new Map<string, RosterCounts>()
+  try {
+    const raw = JSON.parse(readFileSync(resolve(DIST_DIR, 'agency_index.json'), 'utf8'))
+    const agencies: Array<Record<string, unknown>> = Array.isArray(raw)
+      ? raw
+      : ((raw.agencies as Array<Record<string, unknown>>) ?? [])
+    const agencyCount = new Map<string, number>()
+    const agreementCount = new Map<string, number>()
+    for (const a of agencies) {
+      if (a?.terminated_date) continue // active-only, matching the headline rule
+      const st = String(a?.state ?? '').toUpperCase()
+      if (!st) continue
+      agencyCount.set(st, (agencyCount.get(st) ?? 0) + 1)
+      const models = Array.isArray(a?.models) ? a.models.length : 0
+      agreementCount.set(st, (agreementCount.get(st) ?? 0) + models)
+    }
+    for (const [st, count] of agencyCount) {
+      // Competition rank: 1 + the number of states strictly ahead by agency_count.
+      let ahead = 0
+      for (const other of agencyCount.values()) if (other > count) ahead++
+      map.set(st, { agency_count: count, agreement_count: agreementCount.get(st) ?? 0, abs_rank: ahead + 1 })
+    }
+  } catch (e) {
+    console.warn(`roster load failed (${(e as Error).message}); falling back to run_meta numbers`)
+  }
+  ROSTER_CACHE = map
+  return map
+}
+
 // ── Roster placeholder substitution ──────────────────────────────────────────
 // The prose is cached and regenerated rarely, so the roster numbers ride as
-// tokens and are filled here from the program's own run_meta grounding (which is
-// what the prose was composed against, so the sentences stay internally coherent —
-// e.g. "listing 7 participating agencies—the 28th such total"). Filling from the
-// site's live roster instead would be marginally fresher but could contradict the
-// prose's framing; run_meta is the coherent source. English is templated today;
-// the Spanish prose currently carries no tokens (it hedges "decenas de agencias"),
-// so a fill there is a harmless no-op until the program templates ES too.
+// {{tokens}} and are filled here from the live roster above (loadRoster). We used
+// to fill from the program's own run_meta grounding, but that is a lagged DDN
+// snapshot that can disagree with our live card — e.g. MO read 102 agencies / 3rd
+// there vs our card's 105 / 4th — so run_meta now only backfills states the roster
+// doesn't cover. English is templated today; the Spanish prose currently carries
+// no tokens (it hedges "decenas de agencias"), so a fill there is a harmless no-op
+// until the program templates ES too.
 const enOrdinal = (n: number): string => {
   const s = ['th', 'st', 'nd', 'rd']
   const v = n % 100
@@ -332,6 +374,20 @@ function mdToHtml(md: string, links: Record<string, string>): string {
 }
 
 // ── Per-state build ──────────────────────────────────────────────────────────
+// Reuse license for the AI-written statewide summary prose (en/es). CC BY 4.0 —
+// anyone may share, adapt, or syndicate it, including commercially, with credit.
+// Emitted in every state file AND the index so an API/syndication consumer gets
+// machine-readable terms. Scope: the summary prose only — the linked third-party
+// source articles under internal.relevant_articles belong to their publishers.
+const SUMMARY_LICENSE = {
+  id: 'CC-BY-4.0',
+  name: 'Creative Commons Attribution 4.0 International',
+  url: 'https://creativecommons.org/licenses/by/4.0/',
+  attribution: '287(g) Watch (a project of Recovered Factory)',
+  attribution_url: 'https://287g.recoveredfactory.net',
+  covers: 'statewide summary prose (en/es); excludes cited third-party articles',
+}
+
 type IndexEntry = { abbr: string; state: string; generated_at: string; built_at: string }
 // A brief attempt lands in one of four buckets. Only `error` is a real failure;
 // `skip` (DDN hasn't reached this state) and `mismatch` (program returned another
@@ -367,10 +423,14 @@ async function buildStateBrief(abbr: string, name: string): Promise<BriefOutcome
   if (!summaryEn.trim() || pool <= 0) return { kind: 'skip', reason: 'no DDN coverage yet' }
 
   try {
+    // Fill from our live roster so the blurb agrees with the state page card;
+    // run_meta only backfills a state the roster doesn't cover (e.g. a territory
+    // with no agencies). See loadRoster.
+    const roster = loadRoster().get(abbr)
     const fills: Fills = {
-      agency_count: runMeta.agency_count,
-      agreement_count: runMeta.agreement_count,
-      abs_rank: runMeta.abs_rank,
+      agency_count: roster?.agency_count ?? runMeta.agency_count,
+      agreement_count: roster?.agreement_count ?? runMeta.agreement_count,
+      abs_rank: roster?.abs_rank ?? runMeta.abs_rank,
     }
     const render = (name_: string, artName: string, locale: 'en' | 'es') => {
       const filled = fillPlaceholders(artStr(result, artName), fills, locale)
@@ -385,6 +445,7 @@ async function buildStateBrief(abbr: string, name: string): Promise<BriefOutcome
       after: str(runMeta.after_date),
       generated_at: new Date().toISOString(),
       built_at: builtAt,
+      license: SUMMARY_LICENSE,
       // news_bilingual_brief drops the legislation stance artifact; the badge is
       // flag-gated, so null is safe. Keep/retire the field is still an open call.
       legislation: null,
@@ -508,7 +569,7 @@ mkdirSync(OUT_DIR, { recursive: true }) // before indexFromDisk: readdirSync nee
 const indexStates = indexFromDisk()
 writeFileSync(
   resolve(OUT_DIR, 'index.json'),
-  JSON.stringify({ generated_at: new Date().toISOString(), states: indexStates }, null, 2),
+  JSON.stringify({ generated_at: new Date().toISOString(), license: SUMMARY_LICENSE, states: indexStates }, null, 2),
 )
 
 const carried = indexStates.length - manifest.length
