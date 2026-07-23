@@ -34,10 +34,16 @@
   const NEW_MIN_SCALE = 0.4;
   $: p1 = reveal * (1 + REVEAL_BAND);
 
-  $: landFill = dark ? "#1b2736" : "#eef2f6";
-  $: landStroke = dark ? "#38495f" : "#cbd5e1";
-  $: hwStroke = dark ? "#3c4c62" : "#94a3b8";
-  $: dotStroke = dark ? "rgba(8,12,18,0.55)" : "#ffffff";
+  // Pre-April (old) dots recede to a low opacity so the new orange pops; new
+  // dots fade to full as the reveal sweeps past them.
+  const OLD_OPACITY = 0.4;
+
+  // Dark theme (the expansion graphic): land darkened so the orange reads.
+  $: landFill = dark ? "#141d29" : "#eef2f6";
+  $: landStroke = dark ? "#31425a" : "#cbd5e1";
+  $: hwStroke = dark ? "#354661" : "#94a3b8";
+  $: oldDotStroke = dark ? "rgba(10,14,20,0.5)" : "#ffffff";
+  $: newDotStroke = dark ? "rgba(255,214,170,0.65)" : "#ffffff";
 </script>
 
 <svg
@@ -69,17 +75,20 @@
     {/each}
   </g>
 
-  <!-- Agency locations, sized by sworn-officer count -->
+  <!-- Agency locations, sized by sworn-officer count. New (orange) dots pop with
+       a warm rim and reveal in signing order; old dots recede at low opacity. -->
   {#each dots as dot}
-    {@const lr = dot.n === true ? Math.max(0, Math.min(1, (p1 - (dot.s ?? 0)) / REVEAL_BAND)) : 1}
+    {@const isNew = dot.n === true}
+    {@const lr = isNew ? Math.max(0, Math.min(1, (p1 - (dot.s ?? 0)) / REVEAL_BAND)) : 1}
     <circle
       cx={dot.x}
       cy={dot.y}
-      r={radius(dot.o) * (dot.n === true ? NEW_MIN_SCALE + (1 - NEW_MIN_SCALE) * lr : 1)}
+      r={radius(dot.o) * (isNew ? NEW_MIN_SCALE + (1 - NEW_MIN_SCALE) * lr : 1)}
       fill={dot.c}
-      fill-opacity={lr}
-      stroke={dotStroke}
-      stroke-width="0.45"
+      fill-opacity={isNew ? lr : OLD_OPACITY}
+      stroke={isNew ? newDotStroke : oldDotStroke}
+      stroke-width={isNew ? 0.55 : 0.3}
+      stroke-opacity={isNew ? lr : 1}
     />
   {/each}
 </svg>

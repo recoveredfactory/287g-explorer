@@ -12,7 +12,9 @@ import type { HomeAgency } from "$lib/homeData.types";
 // NEW = signed on or after this date. ISO strings compare lexically.
 // (Locals, not exports — SvelteKit only allows reserved exports from +page.server.)
 const SURGE_THRESHOLD = "2026-04-01";
-const OLD_COLOR = "#64748b"; // slate
+// Muted, darker slate for the pre-April baseline so old dots recede into the
+// base map (context, not subject); the new-signing orange is the subject.
+const OLD_COLOR = "#46536a"; // muted slate
 const NEW_COLOR = "#E8792B"; // orange
 
 // Top six states by April–June 2026 signings (given), fixed for the strip.
@@ -52,6 +54,14 @@ export const load = async ({ fetch }) => {
   const seqOf = (d?: string | null): number =>
     isNew(d) ? Math.min(1, Math.max(0, (dayNum(d!) - dayNum(SURGE_THRESHOLD)) / spanDays)) : 0;
 
+  // TRUE since-April counts per state — every agency with signed_date >=
+  // threshold, INCLUDING ones lacking lat/lng (so the per-state labels match
+  // the post's table, e.g. TX = 106 not the 104 that can be plotted).
+  const newCountByState = new Map<string, number>();
+  for (const a of home.agencies) {
+    if (isNew(a.signed_date)) newCountByState.set(a.state, (newCountByState.get(a.state) ?? 0) + 1);
+  }
+
   const byState = new Map<string, HomeAgency[]>();
   for (const a of home.agencies) {
     if (a.lat == null || a.lng == null) continue;
@@ -63,22 +73,22 @@ export const load = async ({ fetch }) => {
   const strip: SurgeStrip[] = STRIP_STATES.flatMap((abbr) => {
     const g = geometry[abbr];
     if (!g) return [];
-    let stateNew = 0;
     const dots: SurgeDot[] = (byState.get(abbr) ?? []).map((a) => {
       const [x, y] = projectDot(g, abbr, a.lng!, a.lat!);
       const n = isNew(a.signed_date);
-      if (n) stateNew++;
       return { x, y, c: n ? NEW_COLOR : OLD_COLOR, o: a.lee?.officer_ct ?? 0, n, s: seqOf(a.signed_date) };
     });
-    // Draw new (orange) dots last so the surge reads on top of the baseline.
+    // Draw new (orange) dots last so the growth reads on top of the baseline.
     dots.sort((p, q) => Number(p.n) - Number(q.n));
-    return [{ abbr, name: STATE_NAMES[abbr] ?? abbr, newCount: stateNew, w: g.w, h: g.h, outline: g.outline, highways: g.highways, dots }];
+    // Label count = the TRUE since-April total (incl. unplottable agencies).
+    return [{ abbr, name: STATE_NAMES[abbr] ?? abbr, newCount: newCountByState.get(abbr) ?? 0, w: g.w, h: g.h, outline: g.outline, highways: g.highways, dots }];
   });
 
   return {
     agencies: home.agencies,
     snapshotDate: home.snapshotDate,
     threshold: SURGE_THRESHOLD,
+    newMax, // newest since-April signing date — the timeline's right edge
     oldColor: OLD_COLOR,
     newColor: NEW_COLOR,
     newCount,

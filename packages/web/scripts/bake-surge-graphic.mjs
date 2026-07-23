@@ -1,19 +1,32 @@
 #!/usr/bin/env node
-// Bake the "old vs new" 287(g) surge graphic (feat/surge-map-graphic) to an
-// animated GIF + a static PNG for email/social. Loads the dedicated route
-// /<lang>/video/surge (a fixed 1200×1500 dark canvas, chrome-suppressed in
-// +layout.svelte), frame-steps window.__bake.seek(progress 0..1) to reveal the
-// new (orange) dots over the old (slate) baseline, screenshots the
-// [data-surge-canvas] element per frame, then encodes:
-//   surge-<lang>.gif  — the reveal sweep, palette-quantized, ~600px wide, 2s tail-hold
-//   surge-<lang>.png   — the final full-opacity frame (all dots in), full 1200px res
-// plus three review stills (surge-frame-old/mid/final.png) at progress 0 / 0.5 / 1.
+// Bake the "287(g) network keeps expanding" graphic (feat/surge-map-graphic) to
+// email/social assets, in FOUR variants of the dedicated route
+// /<lang>/video/surge?variant=…:
+//
+//   card              16:9 (1600×900)  full composition   → GIF + MP4
+//   states-portrait   2×3  (1080×1440) state mini-maps     → GIF
+//   states-landscape  3×2  (1500×1000) state mini-maps     → GIF
+//   nation            16:10 (1200×750) national map only   → GIF
+//
+// For each variant the script frame-steps window.__bake.seek(progress 0..1) to
+// reveal the new (orange) dots over the old (slate) baseline in signing order —
+// synced to the on-canvas Apr→Jul timeline — screenshots [data-surge-canvas] per
+// frame, then encodes a palette-quantized GIF (+ an h264 MP4 for the card), with
+// a short tail-hold before the loop. It also captures three review stills per
+// variant (progress 0 / 0.5 / 1).
+//
+// Deliverables (copied to --scratch, if given) are named 287g-expansion-*:
+//   287g-expansion-card.gif / .mp4
+//   287g-expansion-states-portrait.gif
+//   287g-expansion-states-landscape.gif
+//   287g-expansion-nation.gif
+//   review-<variant>-{old,mid,final}.png
 //
 // Usage:
 //   pnpm bake:surge
-//   pnpm bake:surge --url=http://localhost:5173/en/video/surge
-//   pnpm bake:surge --lang=es
-//   pnpm bake:surge --fps=15 --duration=2.6 --gif-width=600
+//   pnpm bake:surge --base=http://localhost:5185 --scratch=/path/to/scratch
+//   pnpm bake:surge --only=card
+//   pnpm bake:surge --lang=es --fps=15 --duration=2.6
 
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
@@ -34,23 +47,31 @@ const argValue = (flag) => {
 };
 
 const LANG = argValue("--lang") ?? "en";
-const URL = argValue("--url") ?? `http://localhost:5173/${LANG}/video/surge`;
+const BASE = argValue("--base") ?? "http://localhost:5185";
 const FPS = Number(argValue("--fps") ?? 15);
 const DURATION = Number(argValue("--duration") ?? 2.6); // reveal sweep, seconds
-const GIF_WIDTH = Number(argValue("--gif-width") ?? 600);
 const GIF_HOLD = Number(argValue("--gif-hold") ?? 2); // tail-hold before loop, seconds
 const KEEP_FRAMES = args.includes("--keep-frames");
+const ONLY = argValue("--only"); // bake a single variant
+const SCRATCH = argValue("--scratch");
 const TOTAL_FRAMES = Math.max(2, Math.round(FPS * DURATION));
+const DELIVER = "287g-expansion"; // deliverable filename stem (no "surge")
 
-// Big enough to contain the 1200×1500 canvas so the element screenshot (incl.
-// the WebGL map) captures fully.
-const VIEWPORT_W = 1280;
-const VIEWPORT_H = 1600;
+// Per-variant canvas size + output plan. GIF widths kept ≤ ~800px
+// (newsletter-reasonable); the map variants get a longer per-frame settle for
+// MapLibre's software (swiftshader) repaint.
+const VARIANTS = {
+  card: { w: 1600, h: 900, gifWidth: 800, mp4: true, map: true },
+  "states-portrait": { w: 1080, h: 1440, gifWidth: 600, mp4: false, map: false },
+  "states-landscape": { w: 1500, h: 1000, gifWidth: 800, mp4: false, map: false },
+  nation: { w: 1200, h: 750, gifWidth: 800, mp4: false, map: true },
+};
+const VARIANT_LIST = ONLY ? [ONLY] : Object.keys(VARIANTS);
 
-const FRAMES_DIR = path.join(OUT_DIR, `frames-surge-${LANG}`);
 await mkdir(OUT_DIR, { recursive: true });
+if (SCRATCH) await mkdir(SCRATCH, { recursive: true });
 
-// ffmpeg presence
+// ── ffmpeg presence ───────────────────────────────────────────────────────────
 await new Promise((resolve, reject) => {
   const p = spawn("ffmpeg", ["-version"], { stdio: "ignore" });
   p.on("error", () => reject(new Error("ffmpeg not found on PATH — install ffmpeg first")));
@@ -63,122 +84,138 @@ const run = (cmd, argv) =>
     p.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`${cmd} exited ${code}`))));
   });
 
-await rm(FRAMES_DIR, { recursive: true, force: true });
-await mkdir(FRAMES_DIR, { recursive: true });
-
 console.log(`[snap] launching chromium…`);
 const browser = await chromium.launch(launchOptions());
-const context = await browser.newContext({
-  viewport: { width: VIEWPORT_W, height: VIEWPORT_H },
-  deviceScaleFactor: 1,
-});
-const page = await context.newPage();
 
-console.log(`[snap] loading ${URL}…`);
-await page.goto(URL, { waitUntil: "networkidle", timeout: 60_000 });
+let rendererChecked = false;
 
-console.log(`[snap] waiting for map (window.__bake.ready)…`);
-try {
-  await page.waitForFunction(() => window.__mapReady === true, { timeout: 30_000 });
-} catch {
-  console.log(`[snap] no __mapReady in 30s; pressing on`);
-}
-await page.waitForFunction(
-  () => typeof window.__bake?.seek === "function" && typeof window.__bake?.ready === "function",
-  { timeout: 15_000 },
-);
-try {
-  await page.waitForFunction(() => window.__bake.ready() === true, { timeout: 15_000 });
-} catch {
-  console.log(`[snap] __bake.ready() never went true in 15s; pressing on`);
-}
-await page.waitForTimeout(700);
+for (const variant of VARIANT_LIST) {
+  const V = VARIANTS[variant];
+  if (!V) throw new Error(`unknown variant "${variant}"`);
+  const url = `${BASE}/${LANG}/video/surge?variant=${variant}`;
+  const settleMs = V.map ? 140 : 60;
+  console.log(`\n[${variant}] ${V.w}×${V.h} — ${url}`);
 
-await assertRenderer(page);
+  const context = await browser.newContext({
+    viewport: { width: V.w + 40, height: V.h + 40 },
+    deviceScaleFactor: 1,
+  });
+  const page = await context.newPage();
+  await page.goto(url, { waitUntil: "networkidle", timeout: 60_000 });
 
-const canvas = page.locator("[data-surge-canvas]").first();
-await canvas.waitFor({ state: "visible" });
-
-const seek = async (p) => {
-  await page.evaluate((v) => window.__bake.seek(v), p);
-  await page.waitForTimeout(90); // let Svelte commit + MapLibre repaint
-};
-
-// ── review stills (progress 0 / 0.5 / 1) ──────────────────────────────────────
-console.log(`[snap] review stills…`);
-for (const [p, name] of [
-  [0, "surge-frame-old.png"],
-  [0.5, "surge-frame-mid.png"],
-  [1, "surge-frame-final.png"],
-]) {
-  await seek(p);
-  await page.waitForTimeout(120);
-  await canvas.screenshot({ path: path.join(OUT_DIR, name) });
-}
-
-// The static PNG deliverable = the final full-opacity frame at full resolution.
-await seek(1);
-await page.waitForTimeout(120);
-await canvas.screenshot({ path: path.join(OUT_DIR, `surge-${LANG}.png`) });
-
-// ── frame sweep for the GIF ───────────────────────────────────────────────────
-console.log(`[snap] ${TOTAL_FRAMES} frames @ ${FPS}fps (${DURATION}s reveal)…`);
-const t0 = Date.now();
-for (let i = 0; i < TOTAL_FRAMES; i++) {
-  const p = i / (TOTAL_FRAMES - 1);
-  await seek(p);
-  const frameName = `frame_${String(i).padStart(5, "0")}.${FRAME_EXT}`;
-  await canvas.screenshot({ path: path.join(FRAMES_DIR, frameName), ...frameShotOpts() });
-}
-console.log(`[snap] frames in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
-await browser.close();
-
-// ── encode GIF ────────────────────────────────────────────────────────────────
-const FRAME_GLOB = path.join(FRAMES_DIR, `frame_%05d.${FRAME_EXT}`);
-const GIF_PATH = path.join(OUT_DIR, `surge-${LANG}.gif`);
-const PALETTE_PATH = path.join(OUT_DIR, `_palette-surge-${LANG}.png`);
-const TAIL_HOLD = `tpad=stop_duration=${GIF_HOLD}:stop_mode=clone`;
-
-console.log(`[gif] palettegen…`);
-await run("ffmpeg", [
-  "-y",
-  "-framerate", String(FPS),
-  "-i", FRAME_GLOB,
-  "-vf", `${TAIL_HOLD},scale=${GIF_WIDTH}:-1:flags=lanczos,palettegen=stats_mode=diff`,
-  PALETTE_PATH,
-]);
-
-console.log(`[gif] paletteuse → ${GIF_PATH}…`);
-await run("ffmpeg", [
-  "-y",
-  "-framerate", String(FPS),
-  "-i", FRAME_GLOB,
-  "-i", PALETTE_PATH,
-  "-lavfi",
-  `${TAIL_HOLD},scale=${GIF_WIDTH}:-1:flags=lanczos [x]; [x][1:v] paletteuse=dither=bayer:bayer_scale=5`,
-  GIF_PATH,
-]);
-
-await rm(PALETTE_PATH, { force: true });
-if (!KEEP_FRAMES) await rm(FRAMES_DIR, { recursive: true, force: true });
-
-// ── copy deliverables to the shared scratchpad (if provided) ──────────────────
-const SCRATCH = argValue("--scratch");
-if (SCRATCH) {
-  await mkdir(SCRATCH, { recursive: true });
-  for (const f of [
-    `surge-${LANG}.gif`,
-    `surge-${LANG}.png`,
-    "surge-frame-old.png",
-    "surge-frame-mid.png",
-    "surge-frame-final.png",
-  ]) {
-    await copyFile(path.join(OUT_DIR, f), path.join(SCRATCH, f));
+  await page.waitForFunction(
+    () => typeof window.__bake?.seek === "function" && typeof window.__bake?.ready === "function",
+    { timeout: 15_000 },
+  );
+  try {
+    await page.waitForFunction(() => window.__bake.ready() === true, { timeout: 25_000 });
+  } catch {
+    console.log(`[${variant}] __bake.ready() never went true; pressing on`);
   }
-  console.log(`[copy] deliverables → ${SCRATCH}`);
+  await page.waitForTimeout(V.map ? 800 : 250);
+
+  if (!rendererChecked) {
+    await assertRenderer(page);
+    rendererChecked = true;
+  }
+
+  const canvas = page.locator("[data-surge-canvas]").first();
+  await canvas.waitFor({ state: "visible" });
+
+  const seek = async (p) => {
+    await page.evaluate((v) => window.__bake.seek(v), p);
+    await page.waitForTimeout(settleMs);
+  };
+
+  const FRAMES_DIR = path.join(OUT_DIR, `frames-expansion-${variant}`);
+  await rm(FRAMES_DIR, { recursive: true, force: true });
+  await mkdir(FRAMES_DIR, { recursive: true });
+
+  // ── review stills (progress 0 / 0.5 / 1) ────────────────────────────────────
+  for (const [p, name] of [
+    [0, `review-${variant}-old.png`],
+    [0.5, `review-${variant}-mid.png`],
+    [1, `review-${variant}-final.png`],
+  ]) {
+    await seek(p);
+    await page.waitForTimeout(120);
+    await canvas.screenshot({ path: path.join(OUT_DIR, name) });
+  }
+
+  // ── frame sweep ─────────────────────────────────────────────────────────────
+  console.log(`[${variant}] ${TOTAL_FRAMES} frames @ ${FPS}fps (${DURATION}s reveal)…`);
+  const t0 = Date.now();
+  for (let i = 0; i < TOTAL_FRAMES; i++) {
+    const p = i / (TOTAL_FRAMES - 1);
+    await seek(p);
+    const frameName = `frame_${String(i).padStart(5, "0")}.${FRAME_EXT}`;
+    await canvas.screenshot({ path: path.join(FRAMES_DIR, frameName), ...frameShotOpts() });
+  }
+  console.log(`[${variant}] frames in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
+  await context.close();
+
+  // ── encode ──────────────────────────────────────────────────────────────────
+  const FRAME_GLOB = path.join(FRAMES_DIR, `frame_%05d.${FRAME_EXT}`);
+  const TAIL_HOLD = `tpad=stop_duration=${GIF_HOLD}:stop_mode=clone`;
+  const GIF_PATH = path.join(OUT_DIR, `${DELIVER}-${variant}.gif`);
+  const PALETTE_PATH = path.join(OUT_DIR, `_palette-${variant}.png`);
+
+  console.log(`[${variant}] gif palettegen…`);
+  await run("ffmpeg", [
+    "-y",
+    "-framerate", String(FPS),
+    "-i", FRAME_GLOB,
+    "-vf", `${TAIL_HOLD},scale=${V.gifWidth}:-1:flags=lanczos,palettegen=stats_mode=diff`,
+    PALETTE_PATH,
+  ]);
+  console.log(`[${variant}] gif paletteuse → ${path.basename(GIF_PATH)}…`);
+  await run("ffmpeg", [
+    "-y",
+    "-framerate", String(FPS),
+    "-i", FRAME_GLOB,
+    "-i", PALETTE_PATH,
+    "-lavfi",
+    `${TAIL_HOLD},scale=${V.gifWidth}:-1:flags=lanczos [x]; [x][1:v] paletteuse=dither=bayer:bayer_scale=5`,
+    GIF_PATH,
+  ]);
+  await rm(PALETTE_PATH, { force: true });
+
+  let MP4_PATH = null;
+  if (V.mp4) {
+    MP4_PATH = path.join(OUT_DIR, `${DELIVER}-${variant}.mp4`);
+    console.log(`[${variant}] mp4 encode → ${path.basename(MP4_PATH)}…`);
+    await run("ffmpeg", [
+      "-y",
+      "-framerate", String(FPS),
+      "-i", FRAME_GLOB,
+      "-vf", `${TAIL_HOLD},scale=trunc(iw/2)*2:trunc(ih/2)*2`,
+      "-c:v", "libx264",
+      "-pix_fmt", "yuv420p",
+      "-crf", "18",
+      "-preset", "slow",
+      "-movflags", "+faststart",
+      MP4_PATH,
+    ]);
+  }
+
+  if (!KEEP_FRAMES) await rm(FRAMES_DIR, { recursive: true, force: true });
+
+  // ── copy deliverables to the shared scratchpad ──────────────────────────────
+  if (SCRATCH) {
+    const files = [
+      `${DELIVER}-${variant}.gif`,
+      ...(V.mp4 ? [`${DELIVER}-${variant}.mp4`] : []),
+      `review-${variant}-old.png`,
+      `review-${variant}-mid.png`,
+      `review-${variant}-final.png`,
+    ];
+    for (const f of files) await copyFile(path.join(OUT_DIR, f), path.join(SCRATCH, f));
+    console.log(`[${variant}] copied ${files.length} files → ${SCRATCH}`);
+  }
+  console.log(`✓ ${GIF_PATH}`);
+  if (MP4_PATH) console.log(`✓ ${MP4_PATH}`);
 }
 
-console.log(`\n✓ ${GIF_PATH}`);
-console.log(`✓ ${path.join(OUT_DIR, `surge-${LANG}.png`)}`);
-console.log(`✓ review: surge-frame-old/mid/final.png in ${OUT_DIR}`);
+await browser.close();
+console.log(`\n✓ done — ${VARIANT_LIST.join(", ")}`);
 process.exit(0);
