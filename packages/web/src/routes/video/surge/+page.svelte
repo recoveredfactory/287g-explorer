@@ -133,7 +133,7 @@
   .surge-canvas {
     position: relative;
     width: 1200px;
-    height: 1500px;
+    height: 1580px;
     overflow: hidden;
     background: #0c1117;
     color: #ffffff;

@@ -10,9 +10,10 @@ import { STATE_NAMES } from "$lib/states";
 import type { HomeAgency } from "$lib/homeData.types";
 
 // NEW = signed on or after this date. ISO strings compare lexically.
-export const SURGE_THRESHOLD = "2026-04-01";
-export const OLD_COLOR = "#64748b"; // slate
-export const NEW_COLOR = "#E8792B"; // orange
+// (Locals, not exports — SvelteKit only allows reserved exports from +page.server.)
+const SURGE_THRESHOLD = "2026-04-01";
+const OLD_COLOR = "#64748b"; // slate
+const NEW_COLOR = "#E8792B"; // orange
 
 // Top six states by April–June 2026 signings (given), fixed for the strip.
 const STRIP_STATES = ["TX", "AR", "OK", "PA", "MO", "LA"] as const;
