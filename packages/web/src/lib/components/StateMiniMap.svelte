@@ -18,14 +18,19 @@
   // Reveal progress 0→1 (surge graphic). At 0 only old dots show; at 1 every new
   // dot is fully in. Ignored for dots without an `n` flag (they stay fully on).
   export let reveal = 1;
+  // Flat viewBox-unit bump added to every dot's radius (surge graphic "pop").
+  // 0 = the /states index card look is unchanged byte-for-byte.
+  export let dotBump = 0;
 
   // Radius by sworn-officer count, à la the homepage map: sqrt scale, domain
   // capped at ~1,000 officers (sqrt ≈ 32). Big departments pop; rural sheriffs
   // stay a legible floor. A stand-in until county/jurisdiction shapes land.
   const R_MIN = 0.9;
   const R_MAX = 5;
+  // dotBump lifts the floor (and therefore every dot uniformly, since the span
+  // R_MAX − R_MIN is unchanged) so the whole field gains the same flat pop.
   const radius = (officers: number) =>
-    R_MIN + Math.min(1, Math.sqrt(Math.max(0, officers)) / 32) * (R_MAX - R_MIN);
+    R_MIN + dotBump + Math.min(1, Math.sqrt(Math.max(0, officers)) / 32) * (R_MAX - R_MIN);
 
   // Reveal sweep (mirrors NationalMap's newOld reveal): a soft leading edge in
   // signing order. p1 is referenced directly in the template so Svelte re-renders
@@ -36,7 +41,7 @@
 
   // Pre-April (old) dots recede to a low opacity so the new orange pops; new
   // dots fade to full as the reveal sweeps past them.
-  const OLD_OPACITY = 0.4;
+  const OLD_OPACITY = 0.5;
 
   // Dark theme (the expansion graphic): land darkened so the orange reads.
   $: landFill = dark ? "#141d29" : "#eef2f6";

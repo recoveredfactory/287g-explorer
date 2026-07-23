@@ -3,10 +3,10 @@
 // email/social assets, in FOUR variants of the dedicated route
 // /<lang>/video/surge?variant=…:
 //
-//   card              16:9 (1600×900)  full composition   → GIF + MP4
+//   card              9:16 (1080×1920) full composition   → GIF + MP4
 //   states-portrait   2×3  (1080×1440) state mini-maps     → GIF
 //   states-landscape  3×2  (1500×1000) state mini-maps     → GIF
-//   nation            16:10 (1200×750) national map only   → GIF
+//   nation            8:5  (1280×800)  national map + band → GIF
 //
 // For each variant the script frame-steps window.__bake.seek(progress 0..1) to
 // reveal the new (orange) dots over the old (slate) baseline in signing order —
@@ -57,14 +57,17 @@ const SCRATCH = argValue("--scratch");
 const TOTAL_FRAMES = Math.max(2, Math.round(FPS * DURATION));
 const DELIVER = "287g-expansion"; // deliverable filename stem (no "surge")
 
-// Per-variant canvas size + output plan. GIF widths kept ≤ ~800px
-// (newsletter-reasonable); the map variants get a longer per-frame settle for
-// MapLibre's software (swiftshader) repaint.
+// Per-variant canvas size + output plan. The old ≤800px GIF cap is lifted —
+// deliverables may run up to ~2 MB — so GIF widths are bumped for crispness and
+// tuned per variant to stay under that ceiling (the card, a tall 9:16, is the
+// pixel-heaviest so it gets the smallest downscale). MP4 carries full quality.
+// The map variants get a longer per-frame settle for MapLibre's software
+// (swiftshader) repaint.
 const VARIANTS = {
-  card: { w: 1600, h: 900, gifWidth: 800, mp4: true, map: true },
-  "states-portrait": { w: 1080, h: 1440, gifWidth: 600, mp4: false, map: false },
-  "states-landscape": { w: 1500, h: 1000, gifWidth: 800, mp4: false, map: false },
-  nation: { w: 1200, h: 750, gifWidth: 800, mp4: false, map: true },
+  card: { w: 1080, h: 1920, gifWidth: 640, mp4: true, map: true },
+  "states-portrait": { w: 1080, h: 1440, gifWidth: 900, mp4: false, map: false },
+  "states-landscape": { w: 1500, h: 1000, gifWidth: 1080, mp4: false, map: false },
+  nation: { w: 1280, h: 800, gifWidth: 1000, mp4: false, map: true },
 };
 const VARIANT_LIST = ONLY ? [ONLY] : Object.keys(VARIANTS);
 

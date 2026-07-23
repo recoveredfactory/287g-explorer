@@ -31,12 +31,20 @@
   const intFmt = (tag: string, n: number) => new Intl.NumberFormat(tag).format(n);
 
   // Variant + its fixed canvas dimensions.
+  //   card  is now 9:16 VERTICAL (story/portrait) — 1080×1920.
+  //   nation is bumped up for a crisper standalone map.
   const DIMS: Record<string, { w: number; h: number; scols: number; dot: number }> = {
-    card: { w: 1600, h: 900, scols: 2, dot: 1.15 },
+    card: { w: 1080, h: 1920, scols: 2, dot: 1.15 },
     "states-portrait": { w: 1080, h: 1440, scols: 2, dot: 1 },
     "states-landscape": { w: 1500, h: 1000, scols: 3, dot: 1 },
-    nation: { w: 1200, h: 750, scols: 2, dot: 1.25 },
+    nation: { w: 1280, h: 800, scols: 2, dot: 1.25 },
   };
+
+  // Flat radius "pop" applied to the surge dots (see NationalMap / StateMiniMap):
+  // NAT_DOT_BUMP is in screen px on the WebGL map; MINI_DOT_BUMP is in the mini
+  // maps' ~120-unit viewBox (so a smaller number lands ~the same on screen).
+  const NAT_DOT_BUMP = 1.5;
+  const MINI_DOT_BUMP = 0.8;
   $: variant = (() => {
     const v = $page.url.searchParams.get("variant") ?? "card";
     return v in DIMS ? v : "card";
@@ -44,6 +52,9 @@
   $: dims = DIMS[variant];
   $: hasNationalMap = variant === "card" || variant === "nation";
   $: isStates = variant === "states-portrait" || variant === "states-landscape";
+  // Portrait is a phone/story asset: give it the full-size (non-tiny) legend and
+  // the full (non-compact) timeline so both stay legible at mobile size.
+  $: bigStates = variant === "states-portrait";
 
   // Data-freshness stamp.
   $: asOf = data.snapshotDate
@@ -59,6 +70,13 @@
   let mapReady = 0;
   const onMapReady = () => (mapReady += 1);
   onMount(() => {
+    // Fast-preview hook: ?p=0.5 statically renders the reveal at that progress on
+    // load (seek + hold, no bake), so a single screenshot captures any frame.
+    const pParam = $page.url.searchParams.get("p");
+    if (pParam !== null && pParam !== "") {
+      const p = Number(pParam);
+      if (!Number.isNaN(p)) revealProgress = clamp01(p);
+    }
     (window as any).__bake = {
       ready: () => (hasNationalMap ? mapReady >= 1 : true),
       reveal: (p: number) => (revealProgress = clamp01(p)),
@@ -77,14 +95,12 @@
 
 <div class="surge-canvas surge--{variant}" data-surge-canvas style="width: {dims.w}px; height: {dims.h}px; --scols: {dims.scols};">
   {#if variant === "card"}
-    <!-- ── card: 16:9 full composition ──────────────────────────────────────── -->
+    <!-- ── card: 9:16 vertical full composition ─────────────────────────────── -->
     <header class="card-head">
-      <div class="card-head-main">
-        <div class="surge-title">{m.surge_title()}</div>
-        <div class="surge-sub">
-          <span class="surge-count">{intFmt(localeTag, data.newCount)}</span>
-          <span class="surge-sub-text">{m.surge_subtitle()}</span>
-        </div>
+      <div class="surge-title">{m.surge_title()}</div>
+      <div class="surge-sub">
+        <span class="surge-count">{intFmt(localeTag, data.newCount)}</span>
+        <span class="surge-sub-text">{m.surge_subtitle()}</span>
       </div>
       <div class="surge-legend" aria-hidden="true">
         <span class="surge-leg-item">
@@ -98,40 +114,40 @@
       </div>
     </header>
 
-    <div class="card-body">
-      <div class="card-map">
-        <NationalMap
-          agencies={data.agencies}
-          lower48
-          dotScale={dims.dot}
-          colorMode="newOld"
-          newOldThreshold={data.threshold}
-          newColor={data.newColor}
-          oldColor={data.oldColor}
-          {revealProgress}
-          onReady={onMapReady}
-        />
-      </div>
-      <div class="card-states">
-        <div class="surge-strip-heading">{m.surge_strip_heading()}</div>
-        <div class="surge-strip">
-          {#each data.strip as s}
-            <div class="surge-card">
-              <div class="surge-card-map">
-                <StateMiniMap id={`surge-${s.abbr}`} w={s.w} h={s.h} outline={s.outline} highways={s.highways} dots={s.dots} dark reveal={revealProgress} label={s.name} />
-              </div>
-              <div class="surge-card-label">
-                <span class="surge-card-abbr">{s.abbr}</span>
-                <span class="surge-card-new">+{intFmt(localeTag, s.newCount)}</span>
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
+    <div class="card-map">
+      <NationalMap
+        agencies={data.agencies}
+        lower48
+        dotScale={dims.dot}
+        dotBump={NAT_DOT_BUMP}
+        colorMode="newOld"
+        newOldThreshold={data.threshold}
+        newColor={data.newColor}
+        oldColor={data.oldColor}
+        {revealProgress}
+        onReady={onMapReady}
+      />
     </div>
 
     <div class="card-timeline">
       <SurgeTimeline progress={revealProgress} threshold={data.threshold} newMax={data.newMax} {localeTag} />
+    </div>
+
+    <div class="card-states">
+      <div class="surge-strip-heading">{m.surge_strip_heading()}</div>
+      <div class="surge-strip">
+        {#each data.strip as s}
+          <div class="surge-card">
+            <div class="surge-card-map">
+              <StateMiniMap id={`surge-${s.abbr}`} w={s.w} h={s.h} outline={s.outline} highways={s.highways} dots={s.dots} dark reveal={revealProgress} dotBump={MINI_DOT_BUMP} label={s.name} />
+            </div>
+            <div class="surge-card-label">
+              <span class="surge-card-abbr">{s.abbr}</span>
+              <span class="surge-card-new">+{intFmt(localeTag, s.newCount)}</span>
+            </div>
+          </div>
+        {/each}
+      </div>
     </div>
 
     <footer class="surge-foot">
@@ -145,8 +161,8 @@
 
   {:else if isStates}
     <!-- ── states-portrait / states-landscape: mini-maps only ───────────────── -->
-    <div class="states-top">
-      <div class="surge-legend surge-legend--tiny" aria-hidden="true">
+    <div class="states-top" class:states-top--stacked={bigStates}>
+      <div class="surge-legend" class:surge-legend--tiny={!bigStates} aria-hidden="true">
         <span class="surge-leg-item">
           <span class="surge-swatch" style="background: {data.oldColor}; opacity: 0.5;"></span>
           {m.surge_legend_old()}
@@ -157,7 +173,7 @@
         </span>
       </div>
       <div class="states-timeline">
-        <SurgeTimeline progress={revealProgress} threshold={data.threshold} newMax={data.newMax} {localeTag} compact />
+        <SurgeTimeline progress={revealProgress} threshold={data.threshold} newMax={data.newMax} {localeTag} compact={!bigStates} />
       </div>
     </div>
 
@@ -165,7 +181,7 @@
       {#each data.strip as s}
         <div class="surge-card">
           <div class="surge-card-map">
-            <StateMiniMap id={`surge-${s.abbr}`} w={s.w} h={s.h} outline={s.outline} highways={s.highways} dots={s.dots} dark reveal={revealProgress} label={s.name} />
+            <StateMiniMap id={`surge-${s.abbr}`} w={s.w} h={s.h} outline={s.outline} highways={s.highways} dots={s.dots} dark reveal={revealProgress} dotBump={MINI_DOT_BUMP} label={s.name} />
           </div>
           <div class="surge-card-label">
             <span class="surge-card-abbr">{s.abbr}</span>
@@ -178,12 +194,13 @@
     <div class="surge-watermark">287g.recoveredfactory.net</div>
 
   {:else}
-    <!-- ── nation: national map only ────────────────────────────────────────── -->
+    <!-- ── nation: national map + a clear timeline band (zero overlaps) ──────── -->
     <div class="nation-map">
       <NationalMap
         agencies={data.agencies}
         lower48
         dotScale={dims.dot}
+        dotBump={NAT_DOT_BUMP}
         colorMode="newOld"
         newOldThreshold={data.threshold}
         newColor={data.newColor}
@@ -191,21 +208,24 @@
         {revealProgress}
         onReady={onMapReady}
       />
+      <!-- Watermark tucked into the empty top-right (Atlantic) corner. -->
+      <div class="surge-watermark">287g.recoveredfactory.net</div>
     </div>
-    <div class="nation-legend surge-legend surge-legend--tiny" aria-hidden="true">
-      <span class="surge-leg-item">
-        <span class="surge-swatch" style="background: {data.oldColor}; opacity: 0.5;"></span>
-        {m.surge_legend_old()}
-      </span>
-      <span class="surge-leg-item">
-        <span class="surge-swatch surge-swatch--new" style="background: {data.newColor};"></span>
-        {m.surge_legend_new()}
-      </span>
+    <div class="nation-band">
+      <div class="surge-legend" aria-hidden="true">
+        <span class="surge-leg-item">
+          <span class="surge-swatch" style="background: {data.oldColor}; opacity: 0.5;"></span>
+          {m.surge_legend_old()}
+        </span>
+        <span class="surge-leg-item">
+          <span class="surge-swatch surge-swatch--new" style="background: {data.newColor};"></span>
+          {m.surge_legend_new()}
+        </span>
+      </div>
+      <div class="nation-timeline">
+        <SurgeTimeline progress={revealProgress} threshold={data.threshold} newMax={data.newMax} {localeTag} />
+      </div>
     </div>
-    <div class="nation-timeline">
-      <SurgeTimeline progress={revealProgress} threshold={data.threshold} newMax={data.newMax} {localeTag} compact />
-    </div>
-    <div class="surge-watermark">287g.recoveredfactory.net</div>
   {/if}
 </div>
 
@@ -384,55 +404,50 @@
     pointer-events: none;
   }
 
-  /* ══ card ════════════════════════════════════════════════════════════════ */
-  /* Grid (not flex) so the body's 1fr row is a definite height — the nested
-     state-strip's repeat(3,1fr) rows only resolve equally against a definite
-     parent; a flex leftover leaves them auto-sizing to content and overflowing. */
+  /* ══ card — 9:16 vertical (story/portrait) ═══════════════════════════════ */
+  /* Vertical stack: header · national map (fixed height) · timeline · state
+     strip (fills) · footer. The strip row is 1fr (a definite height) so its
+     nested repeat(3,1fr) cards divide evenly instead of overflowing. */
   .surge--card {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
-    row-gap: 18px;
-    padding: 38px 48px 30px;
+    grid-template-rows: auto 600px auto minmax(0, 1fr) auto;
+    row-gap: 26px;
+    padding: 46px 48px 40px;
   }
   .surge--card .card-head {
     display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 32px;
+    flex-direction: column;
+    gap: 16px;
   }
-  .surge--card .surge-title { font-size: 52px; }
-  .surge--card .surge-sub { margin-top: 12px; }
-  .surge--card .surge-count { font-size: 56px; }
-  .surge--card .surge-sub-text { font-size: 30px; }
-  .surge--card .surge-legend { margin-top: 8px; flex-shrink: 0; }
+  .surge--card .surge-title { font-size: 54px; }
+  .surge--card .surge-sub { align-items: baseline; flex-wrap: wrap; row-gap: 6px; }
+  .surge--card .surge-count { font-size: 72px; }
+  .surge--card .surge-sub-text { font-size: 31px; }
+  .surge--card .surge-legend { gap: 40px; }
 
-  .surge--card .card-body {
-    min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 600px;
-    grid-template-rows: minmax(0, 1fr);
-    column-gap: 26px;
-  }
   .surge--card .card-map {
     min-width: 0;
     position: relative;
-    border-radius: 12px;
+    border-radius: 14px;
     overflow: hidden;
+    background: #0c1117;
   }
+  .surge--card .card-timeline { padding: 0 4px; }
   .surge--card .card-states {
     min-height: 0;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr);
-    row-gap: 12px;
+    row-gap: 14px;
   }
-  .surge--card .surge-strip-heading { font-size: 19px; }
+  .surge--card .surge-strip-heading { font-size: 24px; }
   .surge--card .card-states .surge-strip {
     min-height: 0;
     grid-template-rows: repeat(3, minmax(0, 1fr));
+    gap: 18px;
   }
-  .surge--card .surge-source { max-width: 780px; font-size: 20px; }
-  .surge--card .surge-wm { font-size: 30px; }
-  .surge--card .surge-url { font-size: 21px; }
+  .surge--card .surge-source { max-width: 620px; font-size: 21px; }
+  .surge--card .surge-wm { font-size: 32px; }
+  .surge--card .surge-url { font-size: 22px; }
   .surge--card .surge-asof { font-size: 18px; }
 
   /* ══ states-portrait / states-landscape ═══════════════════════════════════ */
@@ -459,31 +474,45 @@
   .surge--states-portrait .states-grid { grid-template-rows: repeat(3, minmax(0, 1fr)); }
   .surge--states-landscape .states-grid { grid-template-rows: repeat(2, minmax(0, 1fr)); }
 
-  /* ══ nation ════════════════════════════════════════════════════════════════ */
+  /* Portrait is a phone/story asset: stack the legend over a full-width timeline
+     and pump the type up so both read comfortably at mobile size. */
+  .states-top--stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 22px;
+  }
+  .states-top--stacked .states-timeline { max-width: none; }
+  .surge--states-portrait .states-top .surge-legend { gap: 48px; }
+  .surge--states-portrait .states-top .surge-leg-item { font-size: 30px; }
+  .surge--states-portrait .states-top .surge-swatch { width: 26px; height: 26px; }
+  /* Reach into the (non-compact) timeline and scale it up for the phone frame. */
+  .surge--states-portrait :global(.states-timeline .tl-track) { height: 6px; }
+  .surge--states-portrait :global(.states-timeline .tl-marker) { width: 21px; height: 21px; }
+  .surge--states-portrait :global(.states-timeline .tl-tick) { height: 16px; width: 3px; }
+  .surge--states-portrait :global(.states-timeline .tl-label) { font-size: 29px; }
+  .surge--states-portrait :global(.states-timeline .tl-labels) { height: 40px; margin-top: 14px; }
+
+  /* ══ nation — map + a dedicated timeline band (zero overlaps) ═════════════ */
+  /* Two rows: the map fills the top, the legend + timeline live in their own
+     solid band beneath it — the scrubber never sits over the country. */
+  .surge--nation {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
   .surge--nation .nation-map {
-    position: absolute;
-    inset: 0;
+    position: relative;
+    min-height: 0;
   }
-  .surge--nation .nation-legend {
-    position: absolute;
-    top: 24px;
-    left: 28px;
-    z-index: 20;
-    padding: 9px 14px;
-    border-radius: 10px;
-    background: rgba(12, 17, 23, 0.55);
-    backdrop-filter: blur(2px);
+  .surge--nation .nation-band {
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    padding: 20px 40px 26px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0c1117;
   }
-  .surge--nation .nation-timeline {
-    position: absolute;
-    left: 40px;
-    right: 40px;
-    bottom: 34px;
-    z-index: 20;
-    padding: 14px 20px 12px;
-    border-radius: 12px;
-    background: rgba(12, 17, 23, 0.5);
-    backdrop-filter: blur(2px);
-  }
-  .surge--nation .surge-watermark { bottom: 92px; }
+  .surge--nation .nation-band .surge-legend { flex-shrink: 0; }
+  .surge--nation .nation-timeline { flex: 1 1 auto; min-width: 0; }
+  /* Watermark tucked into the empty top-right (Atlantic) corner of the map. */
+  .surge--nation .surge-watermark { top: 22px; right: 30px; bottom: auto; }
 </style>

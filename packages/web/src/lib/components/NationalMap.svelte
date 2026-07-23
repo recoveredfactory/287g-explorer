@@ -46,6 +46,11 @@
   // lower-48 framing — the map is the data, not the basemap.
   export let dotScale = 1;
 
+  // Flat pixels ADDED to every dot's radius (surge graphic "pop"). Additive, so
+  // the smallest rural dots gain the same absolute lift as the biggest metros
+  // — a uniform bump rather than a proportional one. 0 = live map untouched.
+  export let dotBump = 0;
+
   // Optional readiness callback, fired once the map settles (first idle past the
   // initial render). The video composite (#213) renders two maps — the running
   // map and the faint title-card backdrop — and waits for both before baking, so
@@ -390,7 +395,7 @@
   // Contrast split for this graphic: the pre-April baseline recedes (low
   // opacity), the new dots pop (near-full opacity + a warm light rim). These
   // only apply in newOld mode — the site's model map is untouched.
-  const NEWOLD_OLD_OPACITY = 0.35; // baseline dots — context, not subject
+  const NEWOLD_OLD_OPACITY = 0.45; // baseline dots — context, not subject (a touch more present)
   const NEWOLD_NEW_OPACITY = 1.0; // new dots at full reveal — the subject
   const NEWOLD_NEW_STROKE = "rgba(255,214,170,0.6)"; // warm light rim on new dots
   const NEWOLD_OLD_STROKE = "rgba(12,17,23,0.55)"; // near-bg rim knocks out overlaps
@@ -811,10 +816,12 @@
       const SCALE = (isMobile ? 0.7 : 1) * dotScale;
       const sizeExpr: any = ["sqrt", ["coalesce", ["get", "officer_ct"], 0]];
       const sizeDomainMax = 32;
+      // dotBump is added at BOTH endpoints, so the linear interpolation lifts
+      // every dot by the same flat pixel amount regardless of officer count.
       const radius = (low: number, high: number) => [
         "interpolate", ["linear"], sizeExpr,
-        0, low * SCALE,
-        sizeDomainMax, high * SCALE,
+        0, low * SCALE + dotBump,
+        sizeDomainMax, high * SCALE + dotBump,
       ];
       // Captured so the timeline cursor's paint updates can rebuild the radius
       // interpolation each frame with the fade multiplier applied per-stop.
