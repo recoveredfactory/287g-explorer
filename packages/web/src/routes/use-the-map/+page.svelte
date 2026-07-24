@@ -25,7 +25,8 @@
   const GIF = { ext: "gif", label: () => m.usemap_download_gif() };
   const PNG = { ext: "png", label: () => m.usemap_download_image() };
 
-  // The two cuts we bake + publish (scripts/bake-map-*.mjs, publish-map-assets.mjs):
+  // The cuts we bake + publish (scripts/bake-map-*.mjs, bake-surge-graphic.mjs,
+  // publish-map-assets.mjs):
   //   map        — the square, map-only clip: mp4 + gif + the peak-data still.
   //   map-trend  — the 9:16 map+trend social cut: mp4 + gif, no still. Its
   //                preview is width-constrained so the tall frame doesn't
@@ -48,6 +49,15 @@
       heading: () => m.usemap_vertical_heading(),
       note: () => m.usemap_vertical_note(),
       videoLabel: () => m.usemap_vertical_video_label(),
+      formats: [MP4, GIF],
+      previewClass: "mx-auto w-full max-w-[320px]",
+      published: true,
+    },
+    {
+      prefix: "expansion",
+      heading: () => m.usemap_expansion_heading(),
+      note: () => m.usemap_expansion_note(),
+      videoLabel: () => m.usemap_expansion_video_label(),
       formats: [MP4, GIF],
       previewClass: "mx-auto w-full max-w-[320px]",
       published: true,

@@ -61,9 +61,13 @@ const PNG = { ext: "png", type: "image/png" };
 //   map-trend  — the vertical map+trend social video (bake:map-trend-video,
 //                #167). Optional: skipped with a note if it wasn't baked, so a
 //                square-only publish still works.
+//   expansion  — the 9:16 "network expansion" card (bake:surge --only=card).
+//                Optional: the /use-the-map network-expansion cut. Baked EN + ES
+//                by the surge script into expansion-<lang>.{mp4,gif}.
 const ASSETS = [
   { prefix: "map", bake: "map-video", required: true, formats: [MP4, GIF, PNG] },
   { prefix: "map-trend", bake: "map-trend-video", required: false, formats: [MP4, GIF] },
+  { prefix: "expansion", bake: "surge --only=card", required: false, formats: [MP4, GIF] },
 ];
 
 const bucket = await bucketName();

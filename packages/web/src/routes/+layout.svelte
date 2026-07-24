@@ -48,11 +48,12 @@
   $: basePath = deLocalizeHref($page.url.pathname);
   $: origin = $page.url.origin;
 
-  // The /video/national route is a bare 1080×1920 canvas baked into a social
-  // video (#167) — it must render with no site chrome (header, footer, banners,
-  // source notice) so the capture is clean. Suppress all of that here rather
-  // than stripping the DOM in the bake script.
-  $: isVideoRoute = basePath === "/video/national";
+  // The /video/* routes are bare fixed-size canvases baked into social assets
+  // (#167 national video, the surge email/social graphic) — they must render
+  // with no site chrome (header, footer, banners, source notice) so the capture
+  // is clean. Suppress all of that here rather than stripping the DOM in the
+  // bake scripts.
+  $: isVideoRoute = basePath === "/video/national" || basePath.startsWith("/video/");
 
   function hrefFor(targetLocale: Locale) {
     return localizeHref(basePath, { locale: targetLocale });
