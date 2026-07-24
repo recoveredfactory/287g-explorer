@@ -203,6 +203,17 @@ for (const variant of VARIANT_LIST) {
 
   if (!KEEP_FRAMES) await rm(FRAMES_DIR, { recursive: true, force: true });
 
+  // The card is the /use-the-map "network expansion" download cut. Emit it under
+  // the asset-flow naming (`expansion-<lang>.<ext>` in OUT_DIR) so
+  // publish-map-assets.mjs picks it up alongside map / map-trend. EN and ES
+  // coexist because the name carries the lang; the variant-named
+  // `287g-expansion-card.*` deliverables (post/ghost, EN) are left untouched.
+  if (variant === "card") {
+    await copyFile(GIF_PATH, path.join(OUT_DIR, `expansion-${LANG}.gif`));
+    if (MP4_PATH) await copyFile(MP4_PATH, path.join(OUT_DIR, `expansion-${LANG}.mp4`));
+    console.log(`[${variant}] asset-flow copies → expansion-${LANG}.{gif${V.mp4 ? ",mp4" : ""}}`);
+  }
+
   // ── copy deliverables to the shared scratchpad ──────────────────────────────
   if (SCRATCH) {
     const files = [

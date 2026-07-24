@@ -41,11 +41,11 @@
 
   // Pre-April (old) dots recede to a low opacity so the new orange pops; new
   // dots fade to full as the reveal sweeps past them.
-  const OLD_OPACITY = 0.5;
+  const OLD_OPACITY = 0.65;
 
   // Dark theme (the expansion graphic): land darkened so the orange reads.
-  $: landFill = dark ? "#141d29" : "#eef2f6";
-  $: landStroke = dark ? "#31425a" : "#cbd5e1";
+  $: landFill = dark ? "#182331" : "#eef2f6";
+  $: landStroke = dark ? "#48607f" : "#cbd5e1";
   $: hwStroke = dark ? "#354661" : "#94a3b8";
   $: oldDotStroke = dark ? "rgba(10,14,20,0.5)" : "#ffffff";
   $: newDotStroke = dark ? "rgba(255,214,170,0.65)" : "#ffffff";
@@ -60,7 +60,7 @@
 >
   <!-- Land — also the clip source (referenced via <use> so the outline path
        isn't serialized twice). -->
-  <path id="statemap-land-{id}" d={outline} fill={landFill} stroke={landStroke} stroke-width="0.8" stroke-linejoin="round" />
+  <path id="statemap-land-{id}" d={outline} fill={landFill} stroke={landStroke} stroke-width={dark ? 1 : 0.8} stroke-linejoin="round" />
   <defs>
     <clipPath id="statemap-{id}"><use href="#statemap-land-{id}" /></clipPath>
   </defs>

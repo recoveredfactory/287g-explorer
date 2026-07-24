@@ -37,7 +37,7 @@
       const ym = iso.slice(0, 7);
       const day = dayNum(iso);
       const pct = clamp01((day - t0) / span) * 100;
-      const tx = pct <= 1 ? "0%" : pct >= 99 ? "-100%" : "-50%";
+      const tx = pct <= 1 ? "0%" : "-50%";
       out.push({ pct, label: monthFmt(new Date(day * 86_400_000)), ym, tx, isLast: ym === newMaxYm });
       mo += 1;
       if (mo > 12) { mo = 1; y += 1; }
@@ -64,9 +64,10 @@
       <span
         class="tl-label"
         class:is-current={t.ym === cursorYm}
+        class:is-last={t.isLast}
         style="left: {t.pct}%; transform: translateX({t.tx});"
       >
-        {t.label}{#if t.isLast}<em class="tl-partial" class:is-on={cursorYm === newMaxYm}>{m.surge_partial()}</em>{/if}
+        {t.label}{#if t.isLast}<em class="tl-partial" class:is-on={cursorYm === newMaxYm}>({m.surge_partial()})</em>{/if}
       </span>
     {/each}
   </div>
@@ -114,7 +115,7 @@
   }
   .tl-labels {
     position: relative;
-    height: 24px;
+    height: 40px;
     margin-top: 10px;
   }
   .tl-label {
@@ -123,6 +124,7 @@
     white-space: nowrap;
     font-size: 21px;
     font-weight: 700;
+    line-height: 1.1;
     letter-spacing: 0.02em;
     color: #7c8a9b;
     transition: color 120ms linear;
@@ -130,13 +132,21 @@
   .tl-label.is-current {
     color: #f0a869;
   }
+  /* The newest month (July) stacks a "(partial)" caption on a second line,
+     centered under "Jul". Its label box is centered on the tick (tx -50%), so
+     center-aligning both lines sits "(partial)" directly under "Jul". */
+  .tl-label.is-last {
+    text-align: center;
+  }
   .tl-partial {
-    margin-left: 7px;
-    font-size: 0.62em;
+    display: block;
+    margin-left: 0;
+    margin-top: 2px;
+    font-size: 0.6em;
     font-style: normal;
     font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1;
     color: #5c6b7e;
   }
   .tl-partial.is-on {
@@ -153,6 +163,6 @@
       0 0 0 2px rgba(232, 121, 43, 0.22),
       0 0 9px rgba(232, 121, 43, 0.55);
   }
-  .tl--compact .tl-labels { height: 17px; margin-top: 7px; }
+  .tl--compact .tl-labels { height: 30px; margin-top: 7px; }
   .tl--compact .tl-label { font-size: 15px; }
 </style>

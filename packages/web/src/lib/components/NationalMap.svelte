@@ -395,15 +395,17 @@
   // Contrast split for this graphic: the pre-April baseline recedes (low
   // opacity), the new dots pop (near-full opacity + a warm light rim). These
   // only apply in newOld mode — the site's model map is untouched.
-  const NEWOLD_OLD_OPACITY = 0.45; // baseline dots — context, not subject (a touch more present)
+  const NEWOLD_OLD_OPACITY = 0.6; // baseline dots — context, not subject (bumped up for presence)
   const NEWOLD_NEW_OPACITY = 1.0; // new dots at full reveal — the subject
   const NEWOLD_NEW_STROKE = "rgba(255,214,170,0.6)"; // warm light rim on new dots
   const NEWOLD_OLD_STROKE = "rgba(12,17,23,0.55)"; // near-bg rim knocks out overlaps
-  // Darker base map for THIS graphic only (~13% down from C.state / muted
-  // lines) so the orange reads clearly against the country shape. newOld mode
-  // is surge-graphic-only, so gating here never touches the live model map.
-  const NEWOLD_STATE_FILL = "#1a2532";
-  const NEWOLD_STATE_LINE = "#374a60";
+  // Darker base map for THIS graphic only so the orange reads clearly against
+  // the country shape — but lifted from the first pass, which read too faint on
+  // a phone: brighter, slightly heavier state lines and a small bump to the land
+  // fill. newOld mode is surge-graphic-only, so gating never touches the live map.
+  const NEWOLD_STATE_FILL = "#1e2a39";
+  const NEWOLD_STATE_LINE = "#4f6a89";
+  const NEWOLD_LINE_WIDTH = 0.9;
   $: newOldStateFill = colorMode === "newOld" ? NEWOLD_STATE_FILL : C.state;
   $: newOldStateLine = colorMode === "newOld" ? NEWOLD_STATE_LINE : C.line;
   const localRevealExpr = (progress: number): any => {
@@ -546,11 +548,15 @@
         filter: insetFilter,
         paint: {
           "line-color": newOldStateLine,
-          "line-width": C.lineWidth,
+          "line-width": colorMode === "newOld" ? NEWOLD_LINE_WIDTH : C.lineWidth,
           // Fainter at the locked-floor national view (zoom ~1) so the country
           // doesn't read as a cage of borders. Ramps to full visibility once
-          // individual states fill the screen.
-          "line-opacity": ["interpolate", ["linear"], ["zoom"], 1, 0.45, 3, 0.9],
+          // individual states fill the screen. The surge graphic (newOld) holds
+          // the lines more present — they read too faint on a phone otherwise.
+          "line-opacity":
+            colorMode === "newOld"
+              ? ["interpolate", ["linear"], ["zoom"], 1, 0.8, 3, 1]
+              : ["interpolate", ["linear"], ["zoom"], 1, 0.45, 3, 0.9],
         },
       });
 

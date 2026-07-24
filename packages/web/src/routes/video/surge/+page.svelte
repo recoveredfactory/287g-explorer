@@ -44,7 +44,7 @@
   // NAT_DOT_BUMP is in screen px on the WebGL map; MINI_DOT_BUMP is in the mini
   // maps' ~120-unit viewBox (so a smaller number lands ~the same on screen).
   const NAT_DOT_BUMP = 1.5;
-  const MINI_DOT_BUMP = 0.8;
+  const MINI_DOT_BUMP = 0.45;
   $: variant = (() => {
     const v = $page.url.searchParams.get("variant") ?? "card";
     return v in DIMS ? v : "card";
@@ -490,7 +490,21 @@
   .surge--states-portrait :global(.states-timeline .tl-marker) { width: 21px; height: 21px; }
   .surge--states-portrait :global(.states-timeline .tl-tick) { height: 16px; width: 3px; }
   .surge--states-portrait :global(.states-timeline .tl-label) { font-size: 29px; }
-  .surge--states-portrait :global(.states-timeline .tl-labels) { height: 40px; margin-top: 14px; }
+  .surge--states-portrait :global(.states-timeline .tl-labels) { height: 52px; margin-top: 14px; }
+
+  /* Landscape's legend + timeline read too small ("squinty") when the 1500px
+     canvas is shown at the post's ~672px column width — enlarge both so they stay
+     legible at that scale (kept trim enough that the side-by-side row won't wrap). */
+  .surge--states-landscape .states-top { gap: 28px; }
+  .surge--states-landscape .states-top .surge-legend { gap: 24px; }
+  .surge--states-landscape .states-top .surge-leg-item { font-size: 28px; gap: 11px; color: #b7c1cd; }
+  .surge--states-landscape .states-top .surge-swatch { width: 23px; height: 23px; }
+  .surge--states-landscape .states-top .states-timeline { max-width: 640px; }
+  .surge--states-landscape :global(.states-timeline .tl-track) { height: 6px; }
+  .surge--states-landscape :global(.states-timeline .tl-marker) { width: 21px; height: 21px; }
+  .surge--states-landscape :global(.states-timeline .tl-tick) { height: 17px; width: 3px; }
+  .surge--states-landscape :global(.states-timeline .tl-label) { font-size: 32px; }
+  .surge--states-landscape :global(.states-timeline .tl-labels) { height: 58px; margin-top: 13px; }
 
   /* ══ nation — map + a dedicated timeline band (zero overlaps) ═════════════ */
   /* Two rows: the map fills the top, the legend + timeline live in their own
@@ -515,4 +529,13 @@
   .surge--nation .nation-timeline { flex: 1 1 auto; min-width: 0; }
   /* Watermark tucked into the empty top-right (Atlantic) corner of the map. */
   .surge--nation .surge-watermark { top: 22px; right: 30px; bottom: auto; }
+
+  /* Nation's legend + timeline were also too small at the hero's display width. */
+  .surge--nation .nation-band .surge-leg-item { font-size: 30px; }
+  .surge--nation .nation-band .surge-swatch { width: 26px; height: 26px; }
+  .surge--nation :global(.nation-timeline .tl-track) { height: 6px; }
+  .surge--nation :global(.nation-timeline .tl-marker) { width: 20px; height: 20px; }
+  .surge--nation :global(.nation-timeline .tl-tick) { height: 16px; width: 3px; }
+  .surge--nation :global(.nation-timeline .tl-label) { font-size: 30px; }
+  .surge--nation :global(.nation-timeline .tl-labels) { height: 54px; margin-top: 12px; }
 </style>
