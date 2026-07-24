@@ -33,18 +33,22 @@
   // Variant + its fixed canvas dimensions.
   //   card  is now 9:16 VERTICAL (story/portrait) — 1080×1920.
   //   nation is bumped up for a crisper standalone map.
-  const DIMS: Record<string, { w: number; h: number; scols: number; dot: number }> = {
-    card: { w: 1080, h: 1920, scols: 2, dot: 1.15 },
-    "states-portrait": { w: 1080, h: 1440, scols: 2, dot: 1 },
-    "states-landscape": { w: 1500, h: 1000, scols: 3, dot: 1 },
-    nation: { w: 1280, h: 800, scols: 2, dot: 1.25 },
+  // `mdot` is the per-variant mini-map dot bump (the flat radius pop passed to
+  // StateMiniMap; see the NAT_DOT_BUMP note below): the standalone states GIFs
+  // run a touch smaller than the card strip so the orange field doesn't crowd at
+  // the larger cell size.
+  const DIMS: Record<string, { w: number; h: number; scols: number; dot: number; mdot: number }> = {
+    card: { w: 1080, h: 1920, scols: 2, dot: 1.15, mdot: 0.45 },
+    "states-portrait": { w: 1080, h: 1440, scols: 2, dot: 1, mdot: 0.2 },
+    "states-landscape": { w: 1500, h: 1000, scols: 3, dot: 1, mdot: 0.2 },
+    nation: { w: 1280, h: 800, scols: 2, dot: 1.25, mdot: 0 },
   };
 
   // Flat radius "pop" applied to the surge dots (see NationalMap / StateMiniMap):
-  // NAT_DOT_BUMP is in screen px on the WebGL map; MINI_DOT_BUMP is in the mini
-  // maps' ~120-unit viewBox (so a smaller number lands ~the same on screen).
+  // NAT_DOT_BUMP is in screen px on the WebGL map; the mini-map bump (DIMS.mdot)
+  // is in the mini maps' ~120-unit viewBox (so a smaller number lands ~the same
+  // on screen).
   const NAT_DOT_BUMP = 1.5;
-  const MINI_DOT_BUMP = 0.45;
   $: variant = (() => {
     const v = $page.url.searchParams.get("variant") ?? "card";
     return v in DIMS ? v : "card";
@@ -139,7 +143,7 @@
         {#each data.strip as s}
           <div class="surge-card">
             <div class="surge-card-map">
-              <StateMiniMap id={`surge-${s.abbr}`} w={s.w} h={s.h} outline={s.outline} highways={s.highways} dots={s.dots} dark reveal={revealProgress} dotBump={MINI_DOT_BUMP} label={s.name} />
+              <StateMiniMap id={`surge-${s.abbr}`} w={s.w} h={s.h} outline={s.outline} highways={s.highways} dots={s.dots} dark reveal={revealProgress} dotBump={dims.mdot} label={s.name} />
             </div>
             <div class="surge-card-label">
               <span class="surge-card-abbr">{s.abbr}</span>
@@ -181,7 +185,7 @@
       {#each data.strip as s}
         <div class="surge-card">
           <div class="surge-card-map">
-            <StateMiniMap id={`surge-${s.abbr}`} w={s.w} h={s.h} outline={s.outline} highways={s.highways} dots={s.dots} dark reveal={revealProgress} dotBump={MINI_DOT_BUMP} label={s.name} />
+            <StateMiniMap id={`surge-${s.abbr}`} w={s.w} h={s.h} outline={s.outline} highways={s.highways} dots={s.dots} dark reveal={revealProgress} dotBump={dims.mdot} label={s.name} />
           </div>
           <div class="surge-card-label">
             <span class="surge-card-abbr">{s.abbr}</span>
