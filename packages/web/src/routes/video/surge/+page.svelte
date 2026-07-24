@@ -458,6 +458,10 @@
     row-gap: 22px;
     padding: 34px 38px 40px;
   }
+  /* Landscape (3×2) packs 2 card rows into 1000px, so the bottom row runs down
+     toward the corner watermark. Extra bottom padding lifts the grid clear of it
+     (portrait's 3 rows already leave room, so it keeps the base 40px). */
+  .surge--states-landscape { padding-bottom: 68px; }
   .states-top {
     display: flex;
     align-items: center;
