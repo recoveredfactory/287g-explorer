@@ -25,7 +25,8 @@
   const GIF = { ext: "gif", label: () => m.usemap_download_gif() };
   const PNG = { ext: "png", label: () => m.usemap_download_image() };
 
-  // The two cuts we bake + publish (scripts/bake-map-*.mjs, publish-map-assets.mjs):
+  // The cuts we bake + publish (scripts/bake-map-*.mjs, bake-surge-graphic.mjs,
+  // publish-map-assets.mjs):
   //   map        — the square, map-only clip: mp4 + gif + the peak-data still.
   //   map-trend  — the 9:16 map+trend social cut: mp4 + gif, no still. Its
   //                preview is width-constrained so the tall frame doesn't
@@ -33,14 +34,16 @@
   // `published: false` keeps a baked-but-not-yet-published cut off the page
   // without deleting it (when its `<prefix>-latest-*` assets may not be live on
   // prod yet). Both current cuts are published; set false to stage a future one.
+  // Newest-first: the since-April network-expansion cut leads, then the vertical
+  // map+trend social cut, then the square map-only clip.
   const CUTS = [
     {
-      prefix: "map",
-      heading: () => m.usemap_square_heading(),
-      note: () => m.usemap_square_note(),
-      videoLabel: () => m.usemap_video_label(),
-      formats: [MP4, GIF, PNG],
-      previewClass: "w-full",
+      prefix: "expansion",
+      heading: () => m.usemap_expansion_heading(),
+      note: () => m.usemap_expansion_note(),
+      videoLabel: () => m.usemap_expansion_video_label(),
+      formats: [MP4, GIF],
+      previewClass: "mx-auto w-full max-w-[320px]",
       published: true,
     },
     {
@@ -50,6 +53,15 @@
       videoLabel: () => m.usemap_vertical_video_label(),
       formats: [MP4, GIF],
       previewClass: "mx-auto w-full max-w-[320px]",
+      published: true,
+    },
+    {
+      prefix: "map",
+      heading: () => m.usemap_square_heading(),
+      note: () => m.usemap_square_note(),
+      videoLabel: () => m.usemap_video_label(),
+      formats: [MP4, GIF, PNG],
+      previewClass: "w-full",
       published: true,
     },
   ];
@@ -91,7 +103,8 @@
     <p>{m.usemap_intro()}</p>
   </div>
 
-  <!-- Cuts: square map-only clip, then the vertical 9:16 map+trend social cut
+  <!-- Cuts, newest-first: since-April expansion, then the vertical 9:16 map+trend
+       social cut, then the square map-only clip
        (VISIBLE_CUTS = the published ones; see the CUTS table above) -->
   {#each VISIBLE_CUTS as cut}
     <section class="mt-10 sm:mt-12">

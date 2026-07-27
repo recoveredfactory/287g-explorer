@@ -21,6 +21,9 @@
   "rf_banner_support_follow": "Ayúdanos a mantenerlos abiertos.",
   "rf_banner_support_cta": "Apóyanos",
   "rf_banner_dismiss": "Cerrar",
+  "analysis_promo_text": "Más de una cuarta parte de todos los acuerdos 287(g) se firmaron desde abril.",
+  "analysis_promo_cta": "Lee nuestro nuevo análisis",
+  "analysis_promo_aria": "Nuevo análisis de Recovered Factory",
   "staging_banner": "Borrador, no compartir",
   "lang_toggle_aria": "Idioma",
   "lang_en": "EN",
@@ -299,6 +302,9 @@
   "usemap_vertical_heading": "Versión vertical para Reels y Shorts",
   "usemap_vertical_note": "Una versión 9:16 que combina el mapa con la línea de tendencia nacional, con el tamaño ideal para Stories, Reels, Shorts y TikTok.",
   "usemap_vertical_video_label": "Animación vertical que combina el mapa de 287(g) con la línea de tendencia nacional, creciendo desde diciembre de 2024 hasta hoy",
+  "usemap_expansion_heading": "Nuevas agencias desde abril",
+  "usemap_expansion_note": "Una tarjeta 9:16 que ubica en el mapa las agencias que han firmado desde abril de 2026 (en naranja) sobre la red 287(g) existente, con el tamaño ideal para Stories, Reels, Shorts y TikTok.",
+  "usemap_expansion_video_label": "Tarjeta vertical que ubica en el mapa las agencias 287(g) firmadas desde abril de 2026 en naranja, reveladas mes a mes de abril a julio",
   "usemap_asof": "Datos al {date}",
   "usemap_download_heading": "Descargar",
   "usemap_download_mp4": "Descargar MP4",
@@ -322,5 +328,12 @@
   "video_states": "estados",
   "video_territories_note": "más Guam y las Islas Marianas del Norte",
   "video_source": "Fuente: registros 287(g) de ICE, archivados por Elijah Appelson",
-  "video_data_as_of": "Datos al"
+  "video_data_as_of": "Datos al",
+  "surge_title": "La red de 287(g) sigue creciendo",
+  "surge_subtitle": "nuevas agencias firmadas desde abril de 2026",
+  "surge_legend_old": "Firmadas antes de abril",
+  "surge_legend_new": "Firmadas desde abril",
+  "surge_strip_heading": "Nuevas agencias por estado",
+  "surge_partial": "parcial",
+  "surge_timeline_aria": "Nuevas agencias por mes, de abril a julio de 2026"
 }

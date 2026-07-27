@@ -46,6 +46,11 @@
   // lower-48 framing — the map is the data, not the basemap.
   export let dotScale = 1;
 
+  // Flat pixels ADDED to every dot's radius (surge graphic "pop"). Additive, so
+  // the smallest rural dots gain the same absolute lift as the biggest metros
+  // — a uniform bump rather than a proportional one. 0 = live map untouched.
+  export let dotBump = 0;
+
   // Optional readiness callback, fired once the map settles (first idle past the
   // initial render). The video composite (#213) renders two maps — the running
   // map and the faint title-card backdrop — and waits for both before baking, so
@@ -63,6 +68,19 @@
   // the state page passes tighter values so the state fills its inset card.
   export let focusPadding = 80;
   export let focusMaxZoom = 6;
+
+  // ── "New vs old" coloring (surge graphic, feat/surge-map-graphic) ───────────
+  // A NON-DEFAULT variant. In "model" mode (the default, everywhere on the site)
+  // dots are colored by primary_model exactly as before. In "newOld" mode each
+  // dot is colored by whether its signing is recent: signed_date >= threshold →
+  // `newColor`, else `oldColor`. The reveal animation (revealProgress 0→1) fades
+  // + grows the NEW dots in, keyed by a per-dot `seq` (normalized signing order),
+  // while OLD dots stay fully visible throughout.
+  export let colorMode: "model" | "newOld" = "model";
+  export let newOldThreshold = "2026-04-01";
+  export let newColor = "#E8792B"; // orange — recent signings (the subject)
+  export let oldColor = "#64748b"; // slate — the pre-surge baseline
+  export let revealProgress = 1; // 0 = old dots only, 1 = all new dots in
 
   let container: HTMLDivElement;
   let map: any = null;
@@ -258,6 +276,27 @@
     return (y - TIMELINE_EPOCH_YEAR) * 12 + (m - 1) + (day - 1) / 31;
   };
 
+  // ── new/old helpers (colorMode === "newOld") ────────────────────────────────
+  // ISO date strings compare lexically, so a plain >= against the threshold is a
+  // correct "signed on or after" test. `seq` maps each new signing to [0,1] by
+  // day within the reveal window (threshold → newest new signing), so the sweep
+  // reveals dots roughly in signing order.
+  const isNewSigned = (d?: string | null): boolean =>
+    !!d && d.length >= 10 && d >= newOldThreshold;
+  const dayNum = (d: string): number => Date.parse(d + "T00:00:00Z") / 86_400_000;
+  $: newMaxDate = (() => {
+    if (colorMode !== "newOld") return newOldThreshold;
+    let max = newOldThreshold;
+    for (const a of [...agencies, ...terminatedAgencies])
+      if (isNewSigned(a.signed_date) && a.signed_date! > max) max = a.signed_date!;
+    return max;
+  })();
+  $: newSpanDays = Math.max(1, dayNum(newMaxDate) - dayNum(newOldThreshold));
+  const seqOf = (d?: string | null): number => {
+    if (!isNewSigned(d)) return 0;
+    return Math.min(1, Math.max(0, (dayNum(d!) - dayNum(newOldThreshold)) / newSpanDays));
+  };
+
   $: geojson = {
     type: "FeatureCollection",
     features: [...agencies, ...terminatedAgencies]
@@ -276,9 +315,19 @@
             models: a.models.join(", "),
             population: a.population ?? 0,
             officer_ct: a.lee?.officer_ct ?? 0,
-            color: MODEL_COLORS[a.primary_model ?? ""] ?? MODEL_FALLBACK,
+            color:
+              colorMode === "newOld"
+                ? isNewSigned(a.signed_date)
+                  ? newColor
+                  : oldColor
+                : MODEL_COLORS[a.primary_model ?? ""] ?? MODEL_FALLBACK,
             signed_idx: signedDateIdx(a.signed_date),
             terminated_idx: terminatedDateIdx(a.terminated_date),
+            // Extra props only in newOld mode, so "model" mode's feature shape is
+            // unchanged (the reveal expressions + sort key key off these).
+            ...(colorMode === "newOld"
+              ? { is_new: isNewSigned(a.signed_date), seq: seqOf(a.signed_date) }
+              : {}),
           },
         };
       }),
@@ -336,8 +385,66 @@
     return ["interpolate", ["linear"], ["zoom"], ...flat];
   };
 
+  // ── newOld reveal (colorMode === "newOld") ──────────────────────────────────
+  // A soft leading edge sweeps across the new dots in signing order. For a new
+  // dot with normalized order `seq`, its local reveal = clamp((p1 - seq)/BAND),
+  // where p1 = revealProgress*(1+BAND) so p=1 lands every new dot fully in. Old
+  // dots (is_new false) skip the sweep and stay at their (low) baseline opacity.
+  const REVEAL_BAND = 0.32;
+  const NEW_MIN_SCALE = 0.35; // new dots grow in from this fraction of full radius
+  // Contrast split for this graphic: the pre-April baseline recedes (low
+  // opacity), the new dots pop (near-full opacity + a warm light rim). These
+  // only apply in newOld mode — the site's model map is untouched.
+  const NEWOLD_OLD_OPACITY = 0.6; // baseline dots — context, not subject (bumped up for presence)
+  const NEWOLD_NEW_OPACITY = 1.0; // new dots at full reveal — the subject
+  const NEWOLD_NEW_STROKE = "rgba(255,214,170,0.6)"; // warm light rim on new dots
+  const NEWOLD_OLD_STROKE = "rgba(12,17,23,0.55)"; // near-bg rim knocks out overlaps
+  // Darker base map for THIS graphic only so the orange reads clearly against
+  // the country shape — but lifted from the first pass, which read too faint on
+  // a phone: brighter, slightly heavier state lines and a small bump to the land
+  // fill. newOld mode is surge-graphic-only, so gating never touches the live map.
+  const NEWOLD_STATE_FILL = "#1e2a39";
+  const NEWOLD_STATE_LINE = "#4f6a89";
+  const NEWOLD_LINE_WIDTH = 0.9;
+  $: newOldStateFill = colorMode === "newOld" ? NEWOLD_STATE_FILL : C.state;
+  $: newOldStateLine = colorMode === "newOld" ? NEWOLD_STATE_LINE : C.line;
+  const localRevealExpr = (progress: number): any => {
+    const p1 = progress * (1 + REVEAL_BAND);
+    return ["max", 0, ["min", 1, ["/", ["-", p1, ["get", "seq"]], REVEAL_BAND]]];
+  };
+  const newOldOpacityExpr = (progress: number): any => [
+    "case",
+    ["get", "is_new"],
+    ["*", NEWOLD_NEW_OPACITY, localRevealExpr(progress)],
+    NEWOLD_OLD_OPACITY,
+  ];
+  // Stroke fades in with the fill for new dots (so a not-yet-revealed dot
+  // doesn't show a bare rim); old dots keep a constant near-bg rim.
+  const newOldStrokeOpacityExpr = (progress: number): any => [
+    "case",
+    ["get", "is_new"],
+    localRevealExpr(progress),
+    1,
+  ];
+  const newOldRadiusExpr = (progress: number): any => {
+    if (!radiusStops.length) return 1;
+    const scale: any = [
+      "case",
+      ["get", "is_new"],
+      ["+", NEW_MIN_SCALE, ["*", 1 - NEW_MIN_SCALE, localRevealExpr(progress)]],
+      1,
+    ];
+    const flat: any[] = [];
+    for (const [z, r] of radiusStops) flat.push(z, ["*", scale, r]);
+    return ["interpolate", ["linear"], ["zoom"], ...flat];
+  };
+
   $: if (map && map.getLayer && map.getLayer("agencies")) {
-    if (cursorIdx == null) {
+    if (colorMode === "newOld") {
+      map.setPaintProperty("agencies", "circle-opacity", ["*", newOldOpacityExpr(revealProgress), dimExpr]);
+      map.setPaintProperty("agencies", "circle-stroke-opacity", newOldStrokeOpacityExpr(revealProgress));
+      map.setPaintProperty("agencies", "circle-radius", newOldRadiusExpr(revealProgress));
+    } else if (cursorIdx == null) {
       map.setPaintProperty("agencies", "circle-opacity", ["*", BASE_OPACITY, dimExpr]);
       map.setPaintProperty("agencies", "circle-radius", baseRadiusExpression());
     } else {
@@ -420,7 +527,7 @@
         type: "fill",
         source: "states",
         filter: insetFilter,
-        paint: { "fill-color": C.state, "fill-opacity": 1 },
+        paint: { "fill-color": newOldStateFill, "fill-opacity": 1 },
       });
 
       // Focus highlight: brighter fill for the selected state(s), drawn over the
@@ -440,12 +547,16 @@
         source: "states",
         filter: insetFilter,
         paint: {
-          "line-color": C.line,
-          "line-width": C.lineWidth,
+          "line-color": newOldStateLine,
+          "line-width": colorMode === "newOld" ? NEWOLD_LINE_WIDTH : C.lineWidth,
           // Fainter at the locked-floor national view (zoom ~1) so the country
           // doesn't read as a cage of borders. Ramps to full visibility once
-          // individual states fill the screen.
-          "line-opacity": ["interpolate", ["linear"], ["zoom"], 1, 0.45, 3, 0.9],
+          // individual states fill the screen. The surge graphic (newOld) holds
+          // the lines more present — they read too faint on a phone otherwise.
+          "line-opacity":
+            colorMode === "newOld"
+              ? ["interpolate", ["linear"], ["zoom"], 1, 0.8, 3, 1]
+              : ["interpolate", ["linear"], ["zoom"], 1, 0.45, 3, 0.9],
         },
       });
 
@@ -711,10 +822,12 @@
       const SCALE = (isMobile ? 0.7 : 1) * dotScale;
       const sizeExpr: any = ["sqrt", ["coalesce", ["get", "officer_ct"], 0]];
       const sizeDomainMax = 32;
+      // dotBump is added at BOTH endpoints, so the linear interpolation lifts
+      // every dot by the same flat pixel amount regardless of officer count.
       const radius = (low: number, high: number) => [
         "interpolate", ["linear"], sizeExpr,
-        0, low * SCALE,
-        sizeDomainMax, high * SCALE,
+        0, low * SCALE + dotBump,
+        sizeDomainMax, high * SCALE + dotBump,
       ];
       // Captured so the timeline cursor's paint updates can rebuild the radius
       // interpolation each frame with the fade multiplier applied per-stop.
@@ -724,25 +837,49 @@
         [10, radius(5, 30)],
         [13, radius(8, 40)],
       ];
-      const initialRadius = cursorIdx == null
-        ? baseRadiusExpression()
-        : radiusWithFade(cursorIdx);
-      const initialOpacity = cursorIdx == null
-        ? ["*", BASE_OPACITY, dimExpr]
-        : ["*", opacityWithFade(cursorIdx), dimExpr];
+      const initialRadius =
+        colorMode === "newOld"
+          ? newOldRadiusExpr(revealProgress)
+          : cursorIdx == null
+            ? baseRadiusExpression()
+            : radiusWithFade(cursorIdx);
+      const initialOpacity =
+        colorMode === "newOld"
+          ? ["*", newOldOpacityExpr(revealProgress), dimExpr]
+          : cursorIdx == null
+            ? ["*", BASE_OPACITY, dimExpr]
+            : ["*", opacityWithFade(cursorIdx), dimExpr];
+      // newOld mode: new dots pop with a warm light rim; old dots get a near-bg
+      // rim so the baseline recedes. Model mode keeps the uniform bg-color rim.
+      const strokeWidth =
+        colorMode === "newOld"
+          ? (["case", ["get", "is_new"], 0.9, 0.2] as any)
+          : C.dotStrokeWidth;
+      const strokeColor =
+        colorMode === "newOld"
+          ? (["case", ["get", "is_new"], NEWOLD_NEW_STROKE, NEWOLD_OLD_STROKE] as any)
+          : C.dotStroke;
+      const strokeOpacity =
+        colorMode === "newOld" ? newOldStrokeOpacityExpr(revealProgress) : 1;
       map.addLayer({
         id: "agencies",
         type: "circle",
         source: "agencies",
+        // newOld mode draws new (orange) dots above old (slate) ones so the
+        // growth reads on top in dense clusters. Omitted in model mode → the
+        // layer definition is unchanged there.
+        ...(colorMode === "newOld"
+          ? { layout: { "circle-sort-key": ["case", ["get", "is_new"], 1, 0] as any } }
+          : {}),
         paint: {
           "circle-color": ["get", "color"],
           // Slight stroke = bg color: knocks out a thin gap between
           // touching dots without reading as a halo. The reduced fill
           // opacity lets dense clusters (FL, TX) read as "many overlapping"
           // rather than a solid blob.
-          "circle-stroke-width": C.dotStrokeWidth,
-          "circle-stroke-color": C.dotStroke,
-          "circle-stroke-opacity": 1,
+          "circle-stroke-width": strokeWidth,
+          "circle-stroke-color": strokeColor,
+          "circle-stroke-opacity": strokeOpacity,
           "circle-radius": initialRadius,
           "circle-opacity": initialOpacity,
         },

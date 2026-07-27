@@ -48,11 +48,12 @@
   $: basePath = deLocalizeHref($page.url.pathname);
   $: origin = $page.url.origin;
 
-  // The /video/national route is a bare 1080×1920 canvas baked into a social
-  // video (#167) — it must render with no site chrome (header, footer, banners,
-  // source notice) so the capture is clean. Suppress all of that here rather
-  // than stripping the DOM in the bake script.
-  $: isVideoRoute = basePath === "/video/national";
+  // The /video/* routes are bare fixed-size canvases baked into social assets
+  // (#167 national video, the surge email/social graphic) — they must render
+  // with no site chrome (header, footer, banners, source notice) so the capture
+  // is clean. Suppress all of that here rather than stripping the DOM in the
+  // bake scripts.
+  $: isVideoRoute = basePath === "/video/national" || basePath.startsWith("/video/");
 
   function hrefFor(targetLocale: Locale) {
     return localizeHref(basePath, { locale: targetLocale });
@@ -108,6 +109,15 @@
   const MISMATCH_KEY = "rf-lang-mismatch-dismissed-v1";
   let mismatchTarget: Locale | null = null;
 
+  // Time-limited promo strip for the recoveredfactory.net April-surge analysis.
+  // Auto-hides sitewide once EXPIRES passes (~10-day run) — bump/clear the date
+  // to change the run. Session-dismissible like the conversion banner. Both
+  // locales point at the EN post until the Spanish translation lands.
+  const ANALYSIS_PROMO_EXPIRES = new Date("2026-08-02T00:00:00Z");
+  const ANALYSIS_PROMO_HREF = "https://recoveredfactory.net/en/287g-network-expansion";
+  const ANALYSIS_PROMO_KEY = "rf-analysis-promo-dismissed-v1";
+  let analysisPromoVisible = false;
+
   onMount(() => {
     bannerVisible = !sessionStorage.getItem(BANNER_KEY);
     if (bannerVisible) {
@@ -117,6 +127,10 @@
         ];
       trackConversion(`conversion_impression_${conversionVariant}`);
     }
+
+    analysisPromoVisible =
+      new Date() < ANALYSIS_PROMO_EXPIRES && !sessionStorage.getItem(ANALYSIS_PROMO_KEY);
+    if (analysisPromoVisible) trackConversion("analysis_promo_impression");
 
     if (localStorage.getItem(MISMATCH_KEY)) return;
     if (hasLocaleCookie()) return; // user has already expressed a preference
@@ -139,6 +153,13 @@
     mismatchTarget = null;
     try {
       localStorage.setItem(MISMATCH_KEY, "1");
+    } catch {}
+  }
+
+  function dismissAnalysisPromo() {
+    analysisPromoVisible = false;
+    try {
+      sessionStorage.setItem(ANALYSIS_PROMO_KEY, "1");
     } catch {}
   }
 </script>
@@ -215,6 +236,37 @@
           class="text-xs text-blue-700/70 underline underline-offset-2 hover:text-blue-700"
         >No thanks</button>
       {/if}
+    </div>
+  {/if}
+  {#if analysisPromoVisible && !isVideoRoute}
+    <div
+      class="flex items-center justify-center gap-2 px-4 py-2 text-center text-sm text-white sm:gap-3"
+      style="background-color: #2c2c2c;"
+      role="region"
+      aria-label={m.analysis_promo_aria()}
+    >
+      <a
+        href={ANALYSIS_PROMO_HREF}
+        target="_blank"
+        rel="noreferrer"
+        on:click={() => trackConversion("analysis_promo_click")}
+        class="text-white no-underline hover:no-underline"
+      >
+        <span class="text-white/85">{m.analysis_promo_text()}</span>
+        <span
+          class="ml-1.5 whitespace-nowrap font-semibold underline decoration-2 underline-offset-4"
+          style="text-decoration-color: #BE6079;"
+        >{m.analysis_promo_cta()} →</span>
+      </a>
+      <button
+        on:click={dismissAnalysisPromo}
+        aria-label={m.rf_banner_dismiss()}
+        class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-white/50 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="h-4 w-4" aria-hidden="true">
+          <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/>
+        </svg>
+      </button>
     </div>
   {/if}
   {#if !isVideoRoute}
