@@ -188,8 +188,14 @@ function loadRoster(): Map<string, RosterCounts> {
     const agencies: Array<Record<string, unknown>> = Array.isArray(raw)
       ? raw
       : ((raw.agencies as Array<Record<string, unknown>>) ?? [])
-    const agencyCount = new Map<string, number>()
-    const agreementCount = new Map<string, number>()
+    // Seed every state we build a brief for at zero. agency_index.json lists only
+    // agencies, so a state with none is absent from it entirely — and an absent
+    // state fell through to run_meta, whose abs_rank is null for exactly those
+    // states, rendering a literal "0th". Seeding gives the zero-agency states a
+    // truthful tied rank; it cannot move anyone else's, since a zero only ever
+    // sorts below a state that has agencies.
+    const agencyCount = new Map<string, number>(Object.keys(STATE_NAMES).map((s) => [s, 0]))
+    const agreementCount = new Map<string, number>(Object.keys(STATE_NAMES).map((s) => [s, 0]))
     for (const a of agencies) {
       if (a?.terminated_date) continue // active-only, matching the headline rule
       const st = String(a?.state ?? '').toUpperCase()
@@ -217,9 +223,9 @@ function loadRoster(): Map<string, RosterCounts> {
 // to fill from the program's own run_meta grounding, but that is a lagged DDN
 // snapshot that can disagree with our live card — e.g. MO read 102 agencies / 3rd
 // there vs our card's 105 / 4th — so run_meta now only backfills states the roster
-// doesn't cover. English is templated today; the Spanish prose currently carries
-// no tokens (it hedges "decenas de agencias"), so a fill there is a harmless no-op
-// until the program templates ES too.
+// doesn't cover. Both locales are templated: the program emits tokens in the ES
+// prose as well as the EN, and (since Jul 2026) in the tl;dr as well as the body,
+// so every rendered artifact has to go through the fill.
 const enOrdinal = (n: number): string => {
   const s = ['th', 'st', 'nd', 'rd']
   const v = n % 100
@@ -227,13 +233,25 @@ const enOrdinal = (n: number): string => {
 }
 type Fills = { agency_count: unknown; agreement_count: unknown; abs_rank: unknown }
 function fillPlaceholders(md: string, f: Fills, locale: 'en' | 'es'): string {
-  const num = (v: unknown): string | null => {
+  // A value is MISSING when it is null/undefined/blank — not merely non-numeric.
+  // `Number(null)` is 0, which IS finite, so an isFinite-only guard silently turned
+  // an absent count or rank into a literal "0" / "0th" instead of leaving the token
+  // for assertFilled to catch. Reject the empty cases before the numeric test.
+  const toNum = (v: unknown): number | null => {
+    if (v == null) return null
+    if (typeof v === 'string' && v.trim() === '') return null
     const n = Number(v)
-    return Number.isFinite(n) ? n.toLocaleString(locale === 'es' ? 'es-ES' : 'en-US') : null
+    return Number.isFinite(n) ? n : null
+  }
+  const num = (v: unknown): string | null => {
+    const n = toNum(v)
+    return n == null ? null : n.toLocaleString(locale === 'es' ? 'es-ES' : 'en-US')
   }
   const rank = (v: unknown): string | null => {
-    const n = Number(v)
-    if (!Number.isFinite(n)) return null
+    const n = toNum(v)
+    // There is no 0th or -1st place. A non-positive rank is upstream garbage, not
+    // a value worth rendering — treat it as missing so the state fails loud.
+    if (n == null || n < 1) return null
     return locale === 'es' ? `${n.toLocaleString('es-ES')}.º` : enOrdinal(n)
   }
   // Only substitute when we actually have a value; a missing one leaves the token
