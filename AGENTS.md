@@ -44,6 +44,20 @@ TypeScript throughout. SvelteKit for the frontend. Node.js for the pipeline. Do 
 
 ## Workflow expectations
 
+### Tickets and branches
+
+Work is tracked in tickets. When a discrete bug surfaces — including one found while doing something else — **file the issue, then branch from `origin/main`** (`<issue#>-<kebab-slug>`), fix only that bug, and open a PR that closes it. Do not bundle it into whatever branch is already checked out.
+
+Finding a bug is not authorization to start fixing it. Surface it, propose the fix, and wait — especially before touching source that the current task didn't ask you to touch. One heads-up beats a finished side-quest that has to be unwound.
+
+### Changes only a human can judge
+
+For anything whose correctness is a matter of feel — mobile tap targets, scroll behavior, animation timing — push the PR and stop. Say what to test and hand it over. Automated checks can confirm the logic and cannot confirm that it feels right on a real phone.
+
+### Explaining failures
+
+When something breaks, report what you measured, not a story that fits the timestamps. If the mechanism is inferred rather than measured, say so or go measure it — usually one command. A confident wrong explanation is worse than "I don't know yet," because it gets acted on.
+
 ### Pipeline changes
 
 After any change to `packages/pipeline/ingest.ts`, run `pnpm pipeline` and verify the output makes sense:
