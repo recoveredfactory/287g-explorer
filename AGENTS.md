@@ -42,10 +42,12 @@ TypeScript throughout. SvelteKit for the frontend. Node.js for the pipeline. Do 
 
 After any change to `packages/pipeline/ingest.ts`, run `pnpm pipeline` and verify the output makes sense:
 
-- Agency count should be in the range of 1,400–1,700 (as of mid-2026)
-- All or nearly all agencies should have a `signed_date`
-- Geocoded percentage should be around 80–85%
-- Model breakdown should show Task Force as the plurality
+- Active agency count should be in the range of 1,750–1,900 (1,846 as of the 2026-07-21 snapshot). `agency_index.json` is **active-only**; departures live in `terminated_agencies.json` (86)
+- All or nearly all agencies should have a `signed_date` (currently 100%)
+- Geocoded percentage should be above 90% (95.6% as of 2026-07-21)
+- Model breakdown should show Task Force as the plurality (1,465 / 533 WSO / 179 JEM)
+
+Update these figures when they drift rather than working around them — a sanity range that lags reality trains everyone to ignore it.
 
 If those numbers move in an unexpected direction, investigate before declaring the work done. The pipeline output is the product.
 
