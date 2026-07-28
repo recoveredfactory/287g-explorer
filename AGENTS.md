@@ -38,7 +38,7 @@ TypeScript throughout. SvelteKit for the frontend. Node.js for the pipeline. Do 
 
 **Do not touch slug generation without flagging it loudly.** Slugs (`/agency/[slug]`) may be linked externally. A change to slug logic is a breaking change and requires a migration plan or a deliberate decision to accept broken links.
 
-**Every user-facing string goes through the translation layer.** This is a bilingual EN/ES site (Paraglide / `@inlang/paraglide-js`). Any text a reader can see must be a Paraglide message — `m.key()` from `$lib/paraglide/messages.js`, with the key added to both `messages/en.json` and `messages/es.json`. No hardcoded English literals in components, and that includes the easy-to-miss ones: `aria-label`s, SVG chart axis/legend/tooltip copy, dropdown options, units ("agreements"/"agencies"), and empty states. Format numbers and dates against the active locale — derive `getLocale() === "es" ? "es-MX" : "en-US"` and pass it to `Intl.NumberFormat`/`Intl.DateTimeFormat`; never a bare `Intl` default or a hardcoded month-name array (see `MapTimelineScrubber.svelte`). Source material — agency names, MOA text, official records — stays in English by design (see the `source_material_notice` key).
+**Every user-facing string goes through the translation layer.** This is a bilingual EN/ES site (Paraglide / `@inlang/paraglide-js`). Any text a reader can see must be a Paraglide message — `m.key()` from `$lib/paraglide/messages.js`, with the key added to both `messages/en.json` and `messages/es.json`. No hardcoded English literals in components, and that includes the easy-to-miss ones: `aria-label`s, SVG chart axis/legend/tooltip copy, dropdown options, units ("agreements"/"agencies"), and empty states. Format numbers and dates against the active locale — derive `getLocale() === "es" ? "es-MX" : "en-US"` and pass it to `Intl.NumberFormat`/`Intl.DateTimeFormat`; never a bare `Intl` default or a hardcoded month-name array (see `MapTimelineScrubber.svelte`). Source material — agency names, MOA text, official records — stays in English by design (see the `source_material_notice` key). One further exception: **verbatim technical constants** — the actual English strings a system consumes, such as API prompt text or literal search queries — stay untranslated, because translating them would misrepresent what the pipeline sends. Only the connective prose around them is keyed. Precedent: the methodology page shows the Perplexity angle prompts and Google query variants verbatim, with an HTML comment explaining why.
 
 ---
 
@@ -70,6 +70,10 @@ After any change to `packages/pipeline/ingest.ts`, run `pnpm pipeline` and verif
 Update these figures when they drift rather than working around them — a sanity range that lags reality trains everyone to ignore it.
 
 If those numbers move in an unexpected direction, investigate before declaring the work done. The pipeline output is the product.
+
+The live pipeline is the TypeScript one (`ingest.ts`). Any Python files you find under `packages/pipeline/` are unrelated in-progress work owned by someone else — not the live stack, and not something to build on or clean up.
+
+**An enrichment that reads a gitignored input will silently degrade in CI.** The file isn't in the repo, so CI has nothing to read; ingest logs one line, emits nulls, every `{#if}`-guarded block disappears without error, and the change gate cheerfully deploys the field-less data. This wiped the MOA signer and contact fields from production for six days before anyone noticed. When adding any enrichment with a gitignored input, wire up its CI production in the same PR, and hard-fail the job if the input can't be produced — no deploy beats a field-less deploy.
 
 ### Web changes
 
