@@ -28,7 +28,13 @@ TypeScript throughout. SvelteKit for the frontend. Node.js for the pipeline. Do 
 
 **Do not write README-style comments.** If code needs explanation beyond its name, restructure it. One-line comments are acceptable only for non-obvious constraints or workarounds. Never explain what the code does — only why, and only when it's surprising.
 
-**Do not add speculative error handling.** The pipeline fetches from two known URLs and parses known formats. Do not add retries, circuit breakers, or null guards for internal invariants that cannot fail. Validate at system boundaries (external HTTP, user input) only.
+**Do not add speculative error handling.** The pipeline fetches from two known URLs and parses known formats. Do not add retries, circuit breakers, or null guards for internal invariants that cannot fail. Validate at system boundaries (external HTTP, user input, third-party API payloads) only — a field arriving from an outside service *is* a boundary, and a guard there is not speculative. When a boundary value is absent, fail loudly; never coerce it into a plausible-looking default. `Number(null)` is `0`, and a silent `0` shipped "the 0th such total in the country" to readers.
+
+**Never `--force` a PromptQL run.** The program caches server-side; a plain run rides that cache. `--force` triggers a recompute and bills real money for prose that already exists. This is absolute — not "avoid by default." If a recompute genuinely seems necessary, ask; do not reach for the flag. Freshness is the upstream program's responsibility, so do not add client-side cache-busting, staleness heuristics, or retry-with-force fallbacks either. Before any multi-state pull, confirm the cache is warm by running ONE state and checking `run_meta.cache_generated_at` against `served_at` — if the former predates the latter, you read the cache and paid nothing.
+
+**The maintainer runs the deploys.** "We'll deploy" and "let's ship it" mean *get everything ready*, not *run it*. Do all the prep — merge, refresh data, verify — then hand over the exact command (`pnpm run deploy --stage prod [--bake-og] [--bake-video]`; note `pnpm run`, since bare `pnpm deploy` collides with pnpm's builtin). Deploying from `main` goes straight to production; there is no staging gate.
+
+**Never use the word "surge" in reader-facing copy.** Not in titles, deks, chart labels, headings, slugs, or output filenames. Frame it as the network expanding, coverage growing, or the pace picking up. Internal identifiers that never render are fine.
 
 **Do not touch slug generation without flagging it loudly.** Slugs (`/agency/[slug]`) may be linked externally. A change to slug logic is a breaking change and requires a migration plan or a deliberate decision to accept broken links.
 
