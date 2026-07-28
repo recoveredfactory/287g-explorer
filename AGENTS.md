@@ -1,6 +1,6 @@
 # Agents
 
-How AI coding agents (Claude, Copilot, etc.) should behave in this repo. Written by a human.
+How AI coding agents (Claude, Copilot, etc.) should behave in this repo. Originally written by a human; later sections were drafted by an agent at the maintainer's direction and reviewed by him.
 
 ---
 
@@ -18,9 +18,11 @@ TypeScript throughout. SvelteKit for the frontend. Node.js for the pipeline. Do 
 
 ## Hard rules
 
-**Do not commit unless explicitly asked.** Present the diff, explain what changed and why, then wait.
+**Commit often, in small atomic units — but never to `main`.** Branch first, then commit each coherent piece of work as you finish it rather than piling everything into one change. Granular history is the point: it reviews better, reverts cleanly, and shows the reasoning. You do not need to ask before each commit on a branch.
 
-**Do not push unless explicitly asked.** A commit approval is not a push approval.
+**Do not commit to `main`, ever.** Not a fixup, not a one-line doc tweak. If you are on `main` with something to commit, branch first.
+
+**Do not push unless explicitly asked.** A commit approval is not a push approval, and neither is a merge approval.
 
 **Do not add dependencies without asking first.** Every new package is a liability. If the standard library can do it in 30 lines, use the standard library.
 
