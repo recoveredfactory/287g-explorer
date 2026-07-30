@@ -63,15 +63,24 @@ export const load = async ({ fetch, params, url }): Promise<AgencyPageData> => {
 
   // muckrock_requests.json is optional — fall back gracefully so older deploys
   // without the snapshot still render the page (just without the dive-deeper match).
-  const muckrock = muckrockRes.ok
-    ? (await muckrockRes.json() as MuckrockSnapshot)
-    : null;
+  //
+  // `.ok` alone is not enough of a guard. When the file is absent from the build
+  // it also drops out of `manifest.assets`, and SvelteKit's server fetch then
+  // stops treating it as a static asset and recurses back into the app — which
+  // answers 200 with an already-consumed body, so `.json()` throws "Body is
+  // unusable" and 500s the whole page. See #267 and scripts/copy-static-data.mjs.
+  let muckrock: MuckrockSnapshot | null = null;
+  try {
+    if (muckrockRes.ok) muckrock = (await muckrockRes.json()) as MuckrockSnapshot;
+  } catch (e) {
+    console.warn(`muckrock snapshot unreadable, rendering without it: ${e}`);
+  }
 
   return {
     agency,
     agencies,
     muckrock: {
-      requests: muckrock?.requests.filter((r) => r.agency_slug === agency.slug) ?? [],
+      requests: muckrock?.requests?.filter((r) => r.agency_slug === agency.slug) ?? [],
       multirequest: muckrock?.multirequest ?? {
         id: 175020,
         title: "ICE Detainers and 287(g) Policies",
