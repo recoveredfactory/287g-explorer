@@ -11,10 +11,16 @@
   import NewsAiWarning from "$lib/components/NewsAiWarning.svelte";
   import LegislationBadge from "$lib/components/LegislationBadge.svelte";
   import { SHOW_LEGISLATION_STANCE } from "$lib/features";
+  import { ogImage } from "$lib/ogImage";
 
   export let data: PageData;
 
   $: ({ abbr, stateName, agencies, stateMeta, snapshotDate, modelCounts, agencyTypeCounts, trendMonths, trend } = data);
+
+  // Shared by <title>/description and the og:/twitter: tags so a share preview
+  // can never drift from the page itself.
+  $: metaTitle = m.state_meta_title({ state: stateName });
+  $: metaDescription = m.state_meta_description({ count: agencies.length, state: stateName });
 
   // "% of local LE agencies" (FBI LEE County+City; state police excluded both
   // sides). Rounded whole percent, but a participating state that rounds to 0
@@ -169,8 +175,16 @@
 </script>
 
 <svelte:head>
-  <title>{m.state_meta_title({ state: stateName })}</title>
-  <meta name="description" content={m.state_meta_description({ count: agencies.length, state: stateName })} />
+  <title>{metaTitle}</title>
+  <meta name="description" content={metaDescription} />
+  <meta property="og:title" content={metaTitle} />
+  <meta property="og:description" content={metaDescription} />
+  <!-- Generic card for now; per-state artwork is #265. -->
+  <meta property="og:image" content={ogImage("states.png")} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:image" content={ogImage("states.png")} />
 </svelte:head>
 
 <main id="main-content" class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
