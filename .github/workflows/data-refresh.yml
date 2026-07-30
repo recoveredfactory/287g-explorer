@@ -427,13 +427,29 @@ jobs:
           else
             echo "news: built_at stamps match"
           fi
+          # Code: compare the commit this build came from against the one that's
+          # live. The gate used to hash data ONLY, so a code-only fix deployed
+          # nothing — the site sat broken through two scheduled ticks that each
+          # correctly concluded "data unchanged" and skipped. A missing remote
+          # stamp means the live bundle predates build_meta.json, which is itself
+          # a code change worth shipping. See #267 / #268.
+          code_changed=false
+          local_commit="${GITHUB_SHA:-$(git rev-parse HEAD)}"
+          if curl -fsSL --retry 3 "https://$HOST/data/dist/build_meta.json" -o /tmp/build-meta.json; then
+            remote_commit=$(node -p "require('/tmp/build-meta.json').commit" 2>/dev/null || echo unreadable)
+          else
+            remote_commit=missing
+          fi
+          echo "commit: local=$local_commit remote=$remote_commit"
+          [ "$local_commit" != "$remote_commit" ] && code_changed=true
           if [ "$FORCE" = "true" ]; then
             echo "force=true → full deploy regardless of change gate"
             data_changed=true
           fi
           echo "data_changed=$data_changed" >> "$GITHUB_OUTPUT"
           echo "news_changed=$news_changed" >> "$GITHUB_OUTPUT"
-          echo "### Data refresh ($STAGE): data_changed=$data_changed news_changed=$news_changed" >> "$GITHUB_STEP_SUMMARY"
+          echo "code_changed=$code_changed" >> "$GITHUB_OUTPUT"
+          echo "### Data refresh ($STAGE): data_changed=$data_changed news_changed=$news_changed code_changed=$code_changed" >> "$GITHUB_STEP_SUMMARY"
 
       # Expose the ICE release date (latest snapshot) for the social caption.
       - name: Read snapshot date
@@ -493,11 +509,14 @@ jobs:
             fi
           done
 
-      # News moved but the dataset didn't: redeploy the site so the fresh
-      # summaries go live, skipping the (slow, data-driven) video/OG bake and
-      # the social release — nothing in either reads news.
-      - name: Deploy site only (news-only change)
-        if: steps.gate.outputs.data_changed != 'true' && steps.gate.outputs.news_changed == 'true'
+      # News or code moved but the dataset didn't: redeploy the site so the
+      # change goes live, skipping the (slow, data-driven) video/OG bake and the
+      # social release — nothing in either reads news, and a code change is not
+      # something to announce.
+      - name: Deploy site only (news- or code-only change)
+        if: >-
+          steps.gate.outputs.data_changed != 'true' &&
+          (steps.gate.outputs.news_changed == 'true' || steps.gate.outputs.code_changed == 'true')
         run: pnpm "deploy:${STAGE}"
 
       - name: Summary
@@ -505,16 +524,19 @@ jobs:
         env:
           DATA_CHANGED: ${{ steps.gate.outputs.data_changed }}
           NEWS_CHANGED: ${{ steps.gate.outputs.news_changed }}
+          CODE_CHANGED: ${{ steps.gate.outputs.code_changed }}
           NEWS_FAILED: ${{ steps.news_health.outputs.news_failed }}
           CHANGED_STATES: ${{ steps.changed.outputs.states }}
           CHANGED_OUTCOME: ${{ steps.changed.outcome }}
         run: |
           if [ "$DATA_CHANGED" = "true" ]; then
             echo "Deployed $STAGE and refreshed map video + OG cards." >> "$GITHUB_STEP_SUMMARY"
-          elif [ "$NEWS_CHANGED" = "true" ]; then
-            echo "News-only change — deployed $STAGE without re-baking assets or posting social." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$NEWS_CHANGED" = "true" ] || [ "$CODE_CHANGED" = "true" ]; then
+            what=$([ "$NEWS_CHANGED" = "true" ] && echo "News" || echo "Code")
+            [ "$NEWS_CHANGED" = "true" ] && [ "$CODE_CHANGED" = "true" ] && what="News + code"
+            echo "$what change — deployed $STAGE without re-baking assets or posting social." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "No change in the upstream snapshot — nothing deployed." >> "$GITHUB_STEP_SUMMARY"
+            echo "No change in the upstream snapshot or the codebase — nothing deployed." >> "$GITHUB_STEP_SUMMARY"
           fi
           if [ "$BUILD_NEWS" != "true" ] && [ -n "$CHANGED_STATES" ]; then
             echo "Refreshed news for the states whose data moved: \`$CHANGED_STATES\` (#233)." >> "$GITHUB_STEP_SUMMARY"
