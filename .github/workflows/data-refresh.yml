@@ -107,7 +107,13 @@ on:
     # Weekly news build — Monday 14:00 UTC (morning US). ONLY this tick builds
     # fresh news (matched by string in BUILD_NEWS below — keep them in sync);
     # the daily ticks above carry the live summaries forward.
-    - cron: "0 14 * * 1"
+    #
+    # DISABLED 2026-07-30 (#271): the link-QC pass hand-fixed the summaries'
+    # sources locally, but the program's server-side prose cache still serves
+    # the old links — a full build would resurrect them in all 53 states.
+    # Re-enable by uncommenting once the composer/ingester emit clean links.
+    # Manual dispatch with build_news=true remains the escape hatch.
+    # - cron: "0 14 * * 1"
 
 # Don't let two refreshes for the same stage clobber each other mid-deploy.
 concurrency:
