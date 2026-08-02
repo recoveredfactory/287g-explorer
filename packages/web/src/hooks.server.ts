@@ -58,6 +58,8 @@ const redirectBarePathToLocale: Handle = async ({ event, resolve }) => {
     (cookieExempt ? null : pickLocaleFromCookie(event.request.headers.get("cookie"))) ??
     pickLocaleFromAcceptLanguage(event.request.headers.get("accept-language"));
   const location = `/${target}${path === "/" ? "" : path}${event.url.search}`;
+  // 302 + no-store on purpose: the target varies by cookie/Accept-Language, so
+  // a cacheable 301 would pin every later visitor to the first locale seen.
   return new Response(null, {
     status: 302,
     headers: {
