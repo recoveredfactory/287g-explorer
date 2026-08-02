@@ -38,7 +38,7 @@
     agency.primary_model ? m.agency_meta_description_model({ model: agency.primary_model }) : "",
     agency.population ? m.agency_meta_description_pop({ pop: intFmt.format(agency.population) }) : "",
   ].filter(Boolean).join(" ");
-  $: canonicalUrl = `${siteUrl}/agency/${agency.slug}`;
+  $: canonicalUrl = siteUrl + localizeHref(`/agency/${agency.slug}`);
 
   $: jsonLd = JSON.stringify({
     "@context": "https://schema.org",
@@ -253,7 +253,6 @@
 <svelte:head>
   <title>{title}</title>
   <meta name="description" content={description} />
-  <link rel="canonical" href={canonicalUrl} />
   <meta property="og:type" content="article" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />

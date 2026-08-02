@@ -19,7 +19,7 @@
 
   const siteUrl = import.meta.env.PUBLIC_SITE_URL ?? "https://287g.recoveredfactory.net";
   const title = `${modelName} — 287(g) Watch`;
-  const canonicalUrl = `${siteUrl}/model/${slug}`;
+  const canonicalUrl = siteUrl + localizeHref(`/model/${slug}`);
 
   const intFmt = new Intl.NumberFormat();
   const dateFmt = snapshotDate
@@ -45,7 +45,6 @@
 <svelte:head>
   <title>{title}</title>
   <meta name="description" content={definition} />
-  <link rel="canonical" href={canonicalUrl} />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={definition} />
   <meta property="og:url" content={canonicalUrl} />

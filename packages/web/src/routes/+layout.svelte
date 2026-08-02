@@ -55,8 +55,11 @@
   // bake scripts.
   $: isVideoRoute = basePath === "/video/national" || basePath.startsWith("/video/");
 
+  // Trailing slash stripped so hreflang/canonical match the sitemap and the
+  // bare-path redirect, which both emit /en — not /en/.
   function hrefFor(targetLocale: Locale) {
-    return localizeHref(basePath, { locale: targetLocale });
+    const href = localizeHref(basePath, { locale: targetLocale });
+    return href.length > 1 ? href.replace(/\/$/, "") : href;
   }
 
   // Active-tab matcher for the header nav. "/" only matches the home page
@@ -167,6 +170,7 @@
 <svelte:head>
   <meta name="application-name" content={siteName} />
   <link rel="icon" type="image/svg+xml" href={faviconHref} />
+  <link rel="canonical" href="{origin}{hrefFor(locale)}" />
   {#each locales as l}
     <link rel="alternate" hreflang={l} href="{origin}{hrefFor(l)}" />
   {/each}
