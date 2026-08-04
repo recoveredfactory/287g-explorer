@@ -110,7 +110,7 @@
       type="button"
       on:click={play}
       aria-label={playing ? "Pause timeline" : "Play timeline"}
-      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+      class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink-900 text-white hover:bg-ink-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-500"
     >
       {#if playing}
         <svg viewBox="0 0 20 20" class="h-4 w-4" fill="currentColor" aria-hidden="true">
@@ -135,19 +135,19 @@
         value={cursorIdx}
         on:input={onSlide}
         aria-label="Scrub to month"
-        class="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-slate-900"
+        class="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-paper-200 accent-ink-900"
       />
     </div>
 
-    <div class="shrink-0 text-right font-mono text-xs tabular-nums text-slate-700 sm:text-sm">
-      <div class="font-semibold text-slate-900">{monthLabel(Math.min(cursorIdx, labelMaxIdx))}</div>
-      <div class="text-[10px] uppercase tracking-wider text-slate-500 sm:text-xs">
+    <div class="shrink-0 text-right font-mono text-xs tabular-nums text-ink-700 sm:text-sm">
+      <div class="font-semibold text-ink-900">{monthLabel(Math.min(cursorIdx, labelMaxIdx))}</div>
+      <div class="text-[10px] uppercase tracking-wider text-ink-500 sm:text-xs">
         {intFmt.format(countAtCursor)} active
       </div>
     </div>
   </div>
 
-  <p class="text-[11px] italic leading-snug text-slate-500 sm:text-xs">
+  <p class="text-[11px] italic leading-snug text-ink-500 sm:text-xs">
     {m.home_map_caveat()}
   </p>
 </div>
@@ -162,7 +162,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #0f172a;
+    background: #241f16;
     cursor: pointer;
     border: 2px solid #ffffff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
@@ -171,7 +171,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #0f172a;
+    background: #241f16;
     cursor: pointer;
     border: 2px solid #ffffff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);

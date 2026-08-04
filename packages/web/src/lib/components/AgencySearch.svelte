@@ -110,7 +110,7 @@
 <div class="agency-search relative w-full sm:max-w-md">
   <div class="relative">
     <svg
-      class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+      class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500"
       fill="none" stroke="currentColor" viewBox="0 0 24 24"
     >
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -130,7 +130,7 @@
       aria-autocomplete="list"
       aria-controls="agency-search-list"
       aria-activedescendant={activeIdx >= 0 ? `agency-opt-${activeIdx}` : undefined}
-      class="w-full rounded-md border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-[#BE6079] focus:outline-none focus:ring-1 focus:ring-[#BE6079] sm:py-2 sm:text-sm"
+      class="w-full rounded-md border border-paper-200 bg-paper-50 py-2.5 pl-9 pr-3 text-base text-ink-900 placeholder:text-ink-500 focus:border-[#BE6079] focus:outline-none focus:ring-1 focus:ring-[#BE6079] sm:py-2 sm:text-sm"
       on:keydown={onKeydown}
       on:focus={onFocus}
       on:blur={onBlur}
@@ -142,7 +142,7 @@
       bind:this={listEl}
       id="agency-search-list"
       role="listbox"
-      class="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg"
+      class="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-md border border-paper-200 bg-paper-50 shadow-lg"
     >
       {#each results as agency, i (agency.slug)}
         <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -151,16 +151,16 @@
           role="option"
           aria-selected={i === activeIdx}
           class="cursor-pointer px-4 py-3 text-sm sm:py-2.5"
-          class:bg-slate-50={i === activeIdx}
+          class:bg-paper-100={i === activeIdx}
           class:border-l-2={agency.slug === currentSlug}
           style={agency.slug === currentSlug ? "border-color: #BE6079;" : ""}
           on:click={() => select(agency)}
           on:mouseenter={() => (activeIdx = i)}
         >
-          <p class="font-semibold text-slate-900 leading-snug">
+          <p class="font-semibold text-ink-900 leading-snug">
             {@html hl(agency.name)}
           </p>
-          <p class="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+          <p class="mt-0.5 flex items-center gap-1.5 text-xs text-ink-500">
             <span>{@html hl([agency.city, STATE_NAMES[agency.state] ?? agency.state].filter(Boolean).join(", "))}</span>
             {#if agency.primary_model}
               <span
