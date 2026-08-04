@@ -45,17 +45,20 @@
      tinted).
      Contrast checked against --color-paper-50 (WCAG AA, 4.5:1 normal text):
      ink-900 16.1:1, ink-700 9.6:1 — safe for any text size, any paper-*
-     background. ink-500 is 4.74:1 on paper-50 (passes) but ~4.5:1 on
-     paper-100 (borderline) — restrict ink-500 to paper-50 backgrounds, or to
+     background. ink-500 is 4.74:1 on paper-50 and 4.58:1 on paper-100
+     (both pass, but tight) — restrict ink-500 to paper-50 backgrounds, or to
      large text (≥18.66px bold / 24px) on paper-100. --color-paper-200 is a
      *decorative* hairline only (well under the 3:1 non-text-contrast
      guidance for meaningful UI boundaries); functional element borders
      (inputs, buttons, card outlines that need to read as identifiable
      controls) should use ink-500 at reduced opacity instead, e.g.
-     color-mix(in srgb, var(--color-ink-500) 45%, transparent). */
+     color-mix(in srgb, var(--color-ink-500) 45%, transparent).
+     paper-100/200 lightened again (post-launch feedback: still read a touch
+     dark/beige on a phone) — same hue/saturation, lightness nudged up
+     (95.5%→97.5%, 89%→94%). */
   --color-paper-50: #fdfdfd;
-  --color-paper-100: #f6f4f1;
-  --color-paper-200: #e9e4dd;
+  --color-paper-100: #FAF9F7;
+  --color-paper-200: #F3F0EC;
   --color-ink-900: #241f16;
   --color-ink-700: #4a4335;
   --color-ink-500: #7a7160;
