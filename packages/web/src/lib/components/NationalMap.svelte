@@ -101,31 +101,42 @@
   // shape instead of clipping the edges agency points don't reach.
   let statesGeoJson: { features: any[] } | null = null;
 
-  // Dark is the only palette — steely analytical mode, replaces the prior
-  // slate/dark toggle so map tone reads consistently across the site.
-  // Land is lifted to a readable slate (sea stays near-black) so the country
-  // shape separates and the dots read against a lighter ground — the OG cards'
-  // "treatment D" intent (linear(1.7,-8)) ported to the live style, without
-  // touching the dots themselves. See #118, #148.
+  // Light "documentary editorial" basemap — matches the site's warm paper/ink
+  // palette instead of the previous dark "steely analytical" scheme (#118,
+  // #148), which predated that palette and was never brought in line with it.
+  // Land is lifted lighter than the ocean/background so the country shape
+  // still separates clearly, same relationship the old dark scheme used
+  // (there: near-black sea, lighter slate land) just inverted in tone, not in
+  // structure. Model dot colors are unchanged (load-bearing, fixed) — contrast
+  // of the weakest (blue, ~2.9:1 against the land fill) is close to what it
+  // was against the old dark land fill (~4.4:1); a real-world light-basemap
+  // tradeoff, offset by each dot's own light stroke rim for separation rather
+  // than relying on fill contrast alone. NOTE: this only affects the default
+  // "model" colorMode — colorMode="newOld" (the /video/surge bake-only
+  // graphic) keeps its own separately-set dark fill/line further down,
+  // deliberately: that's a distinct, already-published visual asset.
   const C = {
-    bg: "#0c1117",
-    state: "#212e3f",
-    line: "#42566c",
+    bg: "#e6dfd0",
+    state: "#f8f5ef",
+    line: "#7a7160",
     lineWidth: 0.7,
-    county: "#283546",
-    roadCasing: "#231f1c",
-    roadFill: "#4f463f",
-    roadMajorCasing: "#221d1a",
-    roadMajorFill: "#4a4139",
-    roadMedium: "#231f1c",
-    dotStroke: "rgba(255,255,255,0.18)",
-    dotStrokeWidth: 0.25,
-    text: "#c2cad4",
-    textHalo: "rgba(8,12,18,0.9)",
+    county: "#e0d6c0",
+    roadCasing: "#fdfdfd",
+    roadFill: "#a8916e",
+    roadMajorCasing: "#fdfdfd",
+    roadMajorFill: "#96805f",
+    roadMedium: "#a8916e",
+    dotStroke: "rgba(253,253,253,0.55)",
+    dotStrokeWidth: 0.35,
+    text: "#4a4335",
+    textHalo: "rgba(253,253,253,0.9)",
     // Focus mode (focusSelected): the selected state's fill is lifted above the
     // base C.state and ringed with an accent border so it reads as the subject.
-    stateHighlight: "#34475e",
-    highlightLine: "#aab8c9",
+    // Rose accent matches the site's established general-notice/focus color
+    // (homepage geo callout, states-index jump highlight, AgencyMap's own
+    // state-highlight border below).
+    stateHighlight: "#fdfdfd",
+    highlightLine: "#BE6079",
     highlightLineWidth: 1.6,
   };
 
@@ -440,6 +451,13 @@
   const NEWOLD_STATE_FILL = "#1e2a39";
   const NEWOLD_STATE_LINE = "#4f6a89";
   const NEWOLD_LINE_WIDTH = 0.9;
+  // The ocean/background layer isn't gated by colorMode the way state fill/line
+  // are (it's set once at map construction, before the reactive newOld* vars
+  // exist) — without its own override it would silently inherit C.bg's new
+  // light tone even in newOld mode, putting a light ocean behind this dark
+  // navy state fill. Keep the surge graphic's original near-black ocean.
+  const NEWOLD_BG = "#0c1117";
+  const backgroundColor = colorMode === "newOld" ? NEWOLD_BG : C.bg;
   $: newOldStateFill = colorMode === "newOld" ? NEWOLD_STATE_FILL : C.state;
   $: newOldStateLine = colorMode === "newOld" ? NEWOLD_STATE_LINE : C.line;
   const localRevealExpr = (progress: number): any => {
@@ -520,7 +538,7 @@
         glyphs: PMTILES_GLYPHS,
         projection: { type: "mercator" },
         layers: [
-          { id: "background", type: "background", paint: { "background-color": C.bg } },
+          { id: "background", type: "background", paint: { "background-color": backgroundColor } },
         ],
       } as any,
       // Inset layout: continental US + territory insets all fit in this window

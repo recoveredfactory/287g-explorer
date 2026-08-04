@@ -14,26 +14,28 @@
   // would draw foreign tiles. Affects 5 agencies total (AK, GU, MP).
   const INSET_STATES = new Set(["AK", "HI", "PR", "VI", "GU", "MP", "AS"]);
 
-  // Dark is the only palette — keeps map tone consistent with the homepage.
-  // The agency view has its own spec because it draws non-current states
-  // distinctly (so the current state pops without dimming neighbors as harshly).
+  // Light "documentary editorial" basemap — matches NationalMap.svelte's
+  // palette (see that file for the fuller design rationale). The agency view
+  // has its own spec because it draws non-current states distinctly (so the
+  // current state pops without dimming neighbors as harshly): stateBg here
+  // recedes closer to the ocean tone, stateHighlight pops to near-white.
   const p = {
-    bg: "#0c1117",
-    stateBg: "#161e27",
-    stateHighlight: "#27323e",
-    stateLines: "#42566c",
+    bg: "#e6dfd0",
+    stateBg: "#eee7d8",
+    stateHighlight: "#fdfdfd",
+    stateLines: "#7a7160",
     stateLineWidth: 0.7,
-    stateHighlightBorder: "#94a3b8",
+    stateHighlightBorder: "#BE6079",
     stateHighlightBorderWidth: 1.8,
-    county: "#1c242e",
-    roadCasing: "#231f1c",
-    roadFill: "#4f463f",
-    roadMedium: "#231f1c",
-    haloFill: "#e8ecf2",
-    dotStroke: "rgba(255,255,255,0.18)",
-    dotStrokeWidth: 0.25,
-    text: "#c2cad4",
-    textHalo: "rgba(8,12,18,0.9)",
+    county: "#e0d6c0",
+    roadCasing: "#fdfdfd",
+    roadFill: "#a8916e",
+    roadMedium: "#a8916e",
+    haloFill: "#fdfdfd",
+    dotStroke: "rgba(253,253,253,0.55)",
+    dotStrokeWidth: 0.35,
+    text: "#4a4335",
+    textHalo: "rgba(253,253,253,0.9)",
   };
 
   export let lat: number | null | undefined = undefined;
