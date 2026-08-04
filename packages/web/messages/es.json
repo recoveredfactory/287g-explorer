@@ -143,6 +143,7 @@
   "map_collapse": "Cerrar el mapa",
   "search_palette_trigger_aria": "Buscar en el sitio",
   "search_palette_placeholder": "Buscar agencias, estados, glosario, modelos…",
+  "search_palette_placeholder_short": "Buscar…",
   "search_palette_group_agencies": "Agencias",
   "search_palette_group_states": "Estados",
   "search_palette_group_glossary": "Glosario",

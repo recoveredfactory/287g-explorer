@@ -143,6 +143,7 @@
   "map_collapse": "Close map",
   "search_palette_trigger_aria": "Search the site",
   "search_palette_placeholder": "Search agencies, states, glossary, models…",
+  "search_palette_placeholder_short": "Search…",
   "search_palette_group_agencies": "Agencies",
   "search_palette_group_states": "States",
   "search_palette_group_glossary": "Glossary",

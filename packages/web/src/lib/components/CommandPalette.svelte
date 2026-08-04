@@ -1,9 +1,11 @@
 <script lang="ts">
-  // Site-wide search — a command-palette overlay reachable from every page
-  // (header trigger + Cmd/Ctrl+K), covering agencies, states, glossary
-  // terms, model pages, and the static content pages. Agencies (the biggest
-  // dataset, ~1,700 rows) are fetched lazily on first open and cached at
-  // module scope so repeat opens in the same session don't refetch.
+  // Site-wide search — an always-visible inline search box in the header
+  // (same pattern as AgencySearch.svelte's agency-jump bar: input + an
+  // absolutely-positioned dropdown anchored right below it, no backdrop, no
+  // centered modal card). Covers agencies, states, glossary terms, model
+  // pages, and the static content pages. Agencies (the biggest dataset,
+  // ~1,700 rows) are fetched lazily on first focus and cached at module
+  // scope so repeat uses in the same session don't refetch.
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
   import { localizeHref } from "$lib/paraglide/runtime";
@@ -31,15 +33,12 @@
     badge?: { label: string; bg: string; fg: string };
   };
 
-  let { open = $bindable(false), triggerEl }: { open?: boolean; triggerEl?: HTMLElement } = $props();
-
   let query = $state("");
+  let dropdownOpen = $state(false);
   let activeIdx = $state(0);
   let inputEl: HTMLInputElement | undefined = $state();
   let listEl: HTMLUListElement | undefined = $state();
 
-  // Module-scope cache — shared across every CommandPalette instance (there's
-  // only ever one, but this also survives if the component remounts).
   let agenciesCache: Agency[] | null = null;
   let agenciesLoading = false;
   let agencies = $state<Agency[]>([]);
@@ -162,36 +161,36 @@
   ]);
 
   $effect(() => {
-    // Reset selection whenever the result set changes shape.
     flatResults;
     activeIdx = 0;
   });
 
-  function close() {
-    open = false;
-    query = "";
-    triggerEl?.focus();
-  }
+  $effect(() => {
+    dropdownOpen = query.trim().length > 0;
+  });
 
   function select(item: ResultItem) {
+    query = "";
+    dropdownOpen = false;
     goto(localizeHref(item.href));
-    close();
   }
 
   function onKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
-      e.preventDefault();
-      close();
+      query = "";
+      dropdownOpen = false;
+      inputEl?.blur();
     } else if (e.key === "ArrowDown") {
+      if (!dropdownOpen || !flatResults.length) return;
       e.preventDefault();
-      if (flatResults.length) activeIdx = Math.min(activeIdx + 1, flatResults.length - 1);
+      activeIdx = Math.min(activeIdx + 1, flatResults.length - 1);
       scrollActive();
     } else if (e.key === "ArrowUp") {
+      if (!dropdownOpen || !flatResults.length) return;
       e.preventDefault();
-      if (flatResults.length) activeIdx = Math.max(activeIdx - 1, 0);
+      activeIdx = Math.max(activeIdx - 1, 0);
       scrollActive();
     } else if (e.key === "Enter") {
-      e.preventDefault();
       if (flatResults[activeIdx]) select(flatResults[activeIdx]);
     }
   }
@@ -200,109 +199,95 @@
     listEl?.children[activeIdx]?.scrollIntoView({ block: "nearest" });
   }
 
-  // Global Cmd/Ctrl+K toggle, plus focus/scroll-lock management on open.
-  function onGlobalKeydown(e: KeyboardEvent) {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-      e.preventDefault();
-      open = !open;
+  function onOutsidePointer(e: PointerEvent) {
+    if (!(e.target as HTMLElement).closest(".command-palette")) {
+      dropdownOpen = false;
     }
   }
 
-  $effect(() => {
-    if (open && browser) {
-      ensureAgenciesLoaded();
+  // Cmd/Ctrl+K focuses the box from anywhere on the page, same convention as
+  // most site-search shortcuts — still useful without the modal.
+  function onGlobalKeydown(e: KeyboardEvent) {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
       inputEl?.focus();
-      const prevOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-      return () => {
-        document.body.style.overflow = prevOverflow;
-      };
     }
-  });
+  }
 </script>
 
-<svelte:window onkeydown={open ? onKeydown : onGlobalKeydown} />
+<svelte:window onpointerdown={onOutsidePointer} onkeydown={onGlobalKeydown} />
 
-{#if open}
-  <div
-    class="fixed inset-0 z-[80] flex items-start justify-center px-4 pt-[12vh]"
-    style="background: rgba(36,31,22,0.45);"
-    role="presentation"
-    onpointerdown={(e) => { if (e.target === e.currentTarget) close(); }}
-  >
-    <div
-      class="w-full max-w-lg overflow-hidden rounded-xl shadow-2xl"
-      style="background: var(--color-paper-50);"
-      role="dialog"
-      aria-modal="true"
+<div class="command-palette relative ml-3 w-full max-w-[9rem] shrink-0 focus-within:max-w-[16rem] sm:ml-4 sm:max-w-[11rem] sm:focus-within:max-w-[18rem]" style="transition: max-width 160ms ease;">
+  <div class="relative">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2" style="color: var(--color-ink-500);" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+    </svg>
+    <input
+      bind:this={inputEl}
+      bind:value={query}
+      type="search"
+      placeholder={m.search_palette_placeholder_short()}
+      autocomplete="off"
+      autocapitalize="none"
+      spellcheck="false"
+      inputmode="search"
+      role="combobox"
+      aria-expanded={dropdownOpen}
+      aria-controls="command-palette-list"
       aria-label={m.search_palette_trigger_aria()}
-    >
-      <div class="flex items-center gap-2 border-b px-4 py-3" style="border-color: var(--color-paper-200);">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 shrink-0" style="color: var(--color-ink-500);" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-        </svg>
-        <input
-          bind:this={inputEl}
-          bind:value={query}
-          type="search"
-          placeholder={m.search_palette_placeholder()}
-          autocomplete="off"
-          autocapitalize="none"
-          spellcheck="false"
-          role="combobox"
-          aria-expanded={flatResults.length > 0}
-          aria-controls="command-palette-list"
-          aria-activedescendant={flatResults[activeIdx] ? `cp-opt-${flatResults[activeIdx].key}` : undefined}
-          class="w-full border-0 bg-transparent text-base outline-none placeholder:text-ink-500"
-          style="color: var(--color-ink-900);"
-        />
-      </div>
-
-      {#if query.trim().length > 0}
-        <ul bind:this={listEl} id="command-palette-list" role="listbox" class="max-h-[60vh] overflow-y-auto py-2">
-          {#if flatResults.length === 0}
-            <li class="px-4 py-6 text-center text-sm" style="color: var(--color-ink-500);">{m.search_palette_no_results()}</li>
-          {/if}
-          {#each [
-            { key: "agencies", label: m.search_palette_group_agencies(), items: groupedResults.agencies },
-            { key: "states", label: m.search_palette_group_states(), items: groupedResults.states },
-            { key: "glossary", label: m.search_palette_group_glossary(), items: groupedResults.glossary },
-            { key: "models", label: m.search_palette_group_models(), items: groupedResults.models },
-            { key: "pages", label: m.search_palette_group_pages(), items: groupedResults.pages },
-          ] as group}
-            {#if group.items.length > 0}
-              <li class="px-4 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{group.label}</li>
-              {#each group.items as item (item.key)}
-                {@const idx = flatResults.indexOf(item)}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <li
-                  id="cp-opt-{item.key}"
-                  role="option"
-                  aria-selected={idx === activeIdx}
-                  class="cursor-pointer px-4 py-2.5"
-                  style={idx === activeIdx ? "background: var(--color-paper-100);" : ""}
-                  onclick={() => select(item)}
-                  onmouseenter={() => (activeIdx = idx)}
-                >
-                  <div class="flex items-center justify-between gap-2">
-                    <p class="truncate text-sm font-semibold" style="color: var(--color-ink-900);">{item.title}</p>
-                    {#if item.badge}
-                      <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold" style="background: {item.badge.bg}; color: {item.badge.fg};">{item.badge.label}</span>
-                    {/if}
-                  </div>
-                  {#if item.subtitle}
-                    <p class="truncate text-xs" style="color: var(--color-ink-500);">{item.subtitle}</p>
-                  {/if}
-                </li>
-              {/each}
-            {/if}
-          {/each}
-        </ul>
-      {/if}
-
-      <div class="border-t px-4 py-2 text-[11px]" style="border-color: var(--color-paper-200); color: var(--color-ink-500);">
-        {m.search_palette_hint()}
-      </div>
-    </div>
+      aria-activedescendant={dropdownOpen && flatResults[activeIdx] ? `cp-opt-${flatResults[activeIdx].key}` : undefined}
+      class="w-full rounded-full border py-1.5 pl-8 pr-2.5 text-xs focus:outline-none focus:ring-1 sm:text-sm"
+      style="border-color: var(--color-paper-200); background: var(--color-paper-100); color: var(--color-ink-900);"
+      onkeydown={onKeydown}
+      onfocus={() => { if (query.trim()) dropdownOpen = true; ensureAgenciesLoaded(); }}
+    />
   </div>
-{/if}
+
+  {#if dropdownOpen}
+    <ul
+      bind:this={listEl}
+      id="command-palette-list"
+      role="listbox"
+      class="absolute left-0 top-full z-50 mt-1.5 max-h-80 w-[min(22rem,90vw)] overflow-y-auto rounded-lg border py-1.5 shadow-lg"
+      style="border-color: var(--color-paper-200); background: var(--color-paper-50);"
+    >
+      {#if flatResults.length === 0}
+        <li class="px-3 py-4 text-center text-sm" style="color: var(--color-ink-500);">{m.search_palette_no_results()}</li>
+      {/if}
+      {#each [
+        { key: "agencies", label: m.search_palette_group_agencies(), items: groupedResults.agencies },
+        { key: "states", label: m.search_palette_group_states(), items: groupedResults.states },
+        { key: "glossary", label: m.search_palette_group_glossary(), items: groupedResults.glossary },
+        { key: "models", label: m.search_palette_group_models(), items: groupedResults.models },
+        { key: "pages", label: m.search_palette_group_pages(), items: groupedResults.pages },
+      ] as group}
+        {#if group.items.length > 0}
+          <li class="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{group.label}</li>
+          {#each group.items as item (item.key)}
+            {@const idx = flatResults.indexOf(item)}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <li
+              id="cp-opt-{item.key}"
+              role="option"
+              aria-selected={idx === activeIdx}
+              class="cursor-pointer px-3 py-2"
+              style={idx === activeIdx ? "background: var(--color-paper-100);" : ""}
+              onclick={() => select(item)}
+              onmouseenter={() => (activeIdx = idx)}
+            >
+              <div class="flex items-center justify-between gap-2">
+                <p class="truncate text-sm font-semibold" style="color: var(--color-ink-900);">{item.title}</p>
+                {#if item.badge}
+                  <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold" style="background: {item.badge.bg}; color: {item.badge.fg};">{item.badge.label}</span>
+                {/if}
+              </div>
+              {#if item.subtitle}
+                <p class="truncate text-xs" style="color: var(--color-ink-500);">{item.subtitle}</p>
+              {/if}
+            </li>
+          {/each}
+        {/if}
+      {/each}
+    </ul>
+  {/if}
+</div>

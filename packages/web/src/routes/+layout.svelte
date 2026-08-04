@@ -69,11 +69,6 @@
   const isNavActive = (href: string, current: string): boolean =>
     href === "/" ? current === "/" : current === href || current.startsWith(href + "/");
 
-  // Site-wide search overlay (Cmd/Ctrl+K or the header trigger). searchTriggerEl
-  // lets CommandPalette return focus to the button that opened it on close.
-  let paletteOpen = false;
-  let searchTriggerEl: HTMLButtonElement;
-
   // Session-only dismissal (#93): user gets the banner once per browser
   // session, not once-and-forever. localStorage was too sticky — we'd
   // rather risk re-showing the banner across sessions than lose all
@@ -298,30 +293,19 @@
            full runes-mode migration of this already-large layout file.) -->
       <div class="py-3 sm:flex sm:h-14 sm:items-center sm:py-0">
 
-        <!-- Row 1 on mobile: logo + search trigger + lang switcher (lang
+        <!-- Row 1 on mobile: logo + inline search + lang switcher (lang
              switcher uses ml-auto to push right now that there are 3 items —
              justify-between doesn't work cleanly with 3 children, it'd float
              the middle one away from the logo instead of clustering left). -->
         <div class="flex items-center sm:contents">
           <a
             href={localizeHref("/")}
-            class="font-serif text-base font-bold tracking-tight no-underline hover:no-underline sm:text-lg"
+            class="shrink-0 font-serif text-base font-bold tracking-tight no-underline hover:no-underline sm:text-lg"
             style="color: var(--color-ink-900);"
           >
             {siteName}
           </a>
-          <button
-            bind:this={searchTriggerEl}
-            type="button"
-            on:click={() => (paletteOpen = true)}
-            aria-label={m.search_palette_trigger_aria()}
-            class="ml-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-paper-200 sm:ml-4"
-            style="color: var(--color-ink-700);"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-          </button>
+          <CommandPalette />
           <LanguageSwitcher {hrefFor} extraClass="ml-auto pl-4 sm:hidden" />
         </div>
 
@@ -360,7 +344,6 @@
       </div>
     </div>
   </header>
-  <CommandPalette bind:open={paletteOpen} triggerEl={searchTriggerEl} />
   {/if}
 
   {#if isEs && !isVideoRoute}
