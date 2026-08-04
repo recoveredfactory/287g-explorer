@@ -6,7 +6,6 @@
   import { localizeHref, getLocale } from "$lib/paraglide/runtime";
   import { m } from "$lib/paraglide/messages.js";
   import { ogImage } from "$lib/ogImage";
-  import AgencySearch from "$lib/components/AgencySearch.svelte";
   import AgencyMap from "$lib/components/AgencyMap.svelte";
   import ExpandableMapFrame from "$lib/components/ExpandableMapFrame.svelte";
   import Gloss from "$lib/components/Gloss.svelte";
@@ -14,8 +13,9 @@
   export let data: PageData;
   const seen = new Set<string>();
 
-  // Reactive destructure so navigating between agencies via the sticky search
-  // (same dynamic route, same component instance) actually refreshes content.
+  // Reactive destructure so navigating between agencies (e.g. via the header
+  // search — same dynamic route, same component instance) actually refreshes
+  // content.
   $: ({ agency, agencies, muckrock } = data);
 
   $: agencyBySlug = new Map(agencies.map((a) => [a.slug, a]));
@@ -267,16 +267,6 @@
   <meta property="twitter:image" content={ogImage(`agency/${agency.slug}.png`)} />
   {@html `<script type="application/ld+json">${jsonLd}</script>`}
 </svelte:head>
-
-<!-- Sticky agency search bar -->
-<div
-  class="sticky z-40 border-b border-paper-200 bg-paper-50/95 px-4 py-3 backdrop-blur sm:px-6"
-  style="top: calc(var(--site-header-height) + var(--staging-banner-height));"
->
-  <div class="mx-auto max-w-4xl">
-    <AgencySearch {agencies} currentSlug={agency.slug} currentAgencyName={agency.name} />
-  </div>
-</div>
 
 <main id="main-content" class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
   <!-- Breadcrumb -->
