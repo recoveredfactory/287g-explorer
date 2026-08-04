@@ -48,6 +48,24 @@
     includeNationalAgencies = !anyOn;
   }
 
+  // The URL already encodes the full selection (?sel=state:GA,agency:...,
+  // kept in sync by the history.replaceState effect below), so "share this
+  // comparison" is just copying the current address — no separate share
+  // link to build or expire.
+  let linkCopied = false;
+  let linkCopiedTimer: ReturnType<typeof setTimeout>;
+  async function copyCompareLink() {
+    if (!browser) return;
+    try {
+      await navigator.clipboard.writeText(location.href);
+    } catch {
+      return; // clipboard permission denied or unavailable — fail silently
+    }
+    linkCopied = true;
+    clearTimeout(linkCopiedTimer);
+    linkCopiedTimer = setTimeout(() => (linkCopied = false), 2000);
+  }
+
   // Top-of-page summary strip + default preview lists — shown unconditionally
   // so the page has real content on load instead of just empty controls
   // waiting for a search.
@@ -449,6 +467,12 @@
           on:click={toggleNational}
           class="text-xs font-semibold text-ink-700 underline underline-offset-2"
         >{(includeNationalStates || includeNationalAgencies) ? m.browse_remove_national() : m.browse_add_national()}</button>
+        <button
+          type="button"
+          on:click={copyCompareLink}
+          aria-live="polite"
+          class="text-xs font-semibold text-ink-700 underline underline-offset-2"
+        >{linkCopied ? m.browse_link_copied() : m.browse_copy_link()}</button>
         <button
           type="button"
           on:click={() => { selection = []; includeNationalStates = false; includeNationalAgencies = false; }}

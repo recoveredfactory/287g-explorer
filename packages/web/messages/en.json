@@ -75,6 +75,8 @@
   "browse_selected_count": "{count} selected",
   "browse_compare_cta": "Compare selected",
   "browse_clear_selection": "Clear",
+  "browse_copy_link": "Copy link",
+  "browse_link_copied": "Link copied",
   "browse_compare_heading": "Comparing {count}",
   "browse_max_note": "Up to 3 at a time.",
   "browse_no_results": "No matches.",
