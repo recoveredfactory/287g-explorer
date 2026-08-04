@@ -69,13 +69,6 @@
   const isNavActive = (href: string, current: string): boolean =>
     href === "/" ? current === "/" : current === href || current.startsWith(href + "/");
 
-  // The single "Explore" nav item covers four sibling routes (states index,
-  // rankings, compare, timeline — see DataNavTabs.svelte, which renders the
-  // sub-nav between them) rather than one path prefix.
-  const DATA_NAV_PATHS = ["/states", "/leaderboard", "/compare", "/timeline"];
-  const isDataNavActive = (current: string): boolean =>
-    DATA_NAV_PATHS.some((p) => isNavActive(p, current));
-
   // Session-only dismissal (#93): user gets the banner once per browser
   // session, not once-and-forever. localStorage was too sticky — we'd
   // rather risk re-showing the banner across sessions than lose all
@@ -326,9 +319,14 @@
           <nav class="flex items-center gap-5 text-sm font-semibold sm:ml-8">
             <a
               href={localizeHref("/states")}
-              class="no-underline {isDataNavActive(basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
-              aria-current={isDataNavActive(basePath) ? 'page' : undefined}
+              class="no-underline {isNavActive('/states', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
+              aria-current={isNavActive('/states', basePath) ? 'page' : undefined}
             >{m.nav_explore()}</a>
+            <a
+              href={localizeHref("/timeline")}
+              class="no-underline {isNavActive('/timeline', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
+              aria-current={isNavActive('/timeline', basePath) ? 'page' : undefined}
+            >{m.nav_timeline()}</a>
             <a
               href={localizeHref("/glossary")}
               class="no-underline {isNavActive('/glossary', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"

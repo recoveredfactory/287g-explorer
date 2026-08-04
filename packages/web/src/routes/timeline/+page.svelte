@@ -4,7 +4,6 @@
   import { m } from "$lib/paraglide/messages.js";
   import { MODEL_COLORS, MODEL_SHORT } from "$lib/colors";
   import { ogImage } from "$lib/ogImage";
-  import DataNavTabs from "$lib/components/DataNavTabs.svelte";
 
   export let data: TimelineData;
 
@@ -34,7 +33,6 @@
 </svelte:head>
 
 <main id="main-content" class="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
-  <DataNavTabs />
   <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--color-ink-500);">{m.timeline_eyebrow()}</p>
   <h1 class="mt-1 text-[length:var(--text-h1)] font-black" style="color: var(--color-ink-900);">{m.timeline_title()}</h1>
   <p class="prose-editorial mt-3">{m.timeline_subtitle()}</p>
