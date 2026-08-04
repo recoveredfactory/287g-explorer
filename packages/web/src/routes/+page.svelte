@@ -16,7 +16,7 @@
   import Gloss from "$lib/components/Gloss.svelte";
   import { ogImage } from "$lib/ogImage";
   import { getCachedGeo } from "$lib/geo";
-  import { VirtualList } from "svelte-virtuallists";
+  import ResponsiveDataTable from "$lib/components/ResponsiveDataTable.svelte";
 
   export let data: PageData;
 
@@ -594,8 +594,9 @@
         </div>
       </div>
 
-      <!-- Result count -->
-      <p class="mt-4 text-sm text-slate-500">
+      <!-- Result count — aria-live so a filter change (which re-renders this
+           text without navigation) gets announced to screen reader users. -->
+      <p class="mt-4 text-sm text-slate-500" aria-live="polite">
         {#if hasActiveFilters}
           {m.home_search_match_count({
             matched: intFmt.format(filteredAgencies.length),
@@ -629,66 +630,114 @@
         </div>
       {:else}
         <div class="agency-list mt-4 rounded-lg border border-slate-200 overflow-hidden text-sm">
-          <!-- Column headers -->
-          <div class="agency-row agency-row--header border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-700">
-            <div class="px-3 py-2 sm:px-4 sm:py-3">Agency</div>
-            <div class="px-2 py-2 sm:px-3 sm:py-3">Type</div>
-            <div class="px-2 py-2 sm:px-3 sm:py-3">Signed</div>
-            <div class="agency-col-pop px-2 py-2 sm:px-3 sm:py-3">Population</div>
-            <div class="px-2 py-2 sm:px-3 sm:py-3">MOA</div>
-            <div class="agency-col-foia px-2 py-2 sm:px-3 sm:py-3">FOIA</div>
-          </div>
-          <!-- Virtualized rows. Keyed on the filter signature so the list
-               remounts and scrolls back to the top whenever a filter changes. -->
-          {#key filterKey}
-          <VirtualList items={filteredAgencies} style="height: calc(100vh - 400px); scrollbar-gutter: stable;">
-            {#snippet vl_slot({ item: agency })}
-            <div class="agency-row border-b border-slate-100 hover:bg-slate-50">
-              <div class="px-3 py-2 sm:px-4 sm:py-3">
-                <a
-                  href={localizeHref(`/agency/${agency.slug}`)}
-                  class="font-semibold leading-snug text-slate-900 no-underline hover:underline"
-                >{agency.name}</a>
-                <p class="text-xs text-slate-600">
-                  {#if agency.city}{agency.city}{/if}{#if agency.city && agency.state}, {/if}{#if agency.state}<a
-                    href={localizeHref(`/state/${agency.state.toLowerCase()}`)}
-                    class="no-underline hover:underline"
-                  >{agency.state}</a>{/if}
-                </p>
+          <ResponsiveDataTable
+            items={filteredAgencies}
+            getKey={(agency) => agency.slug}
+            remountKey={filterKey}
+            ariaLabel={m.home_search_heading()}
+            listStyle="height: calc(100vh - 400px); scrollbar-gutter: stable;"
+          >
+            {#snippet header()}
+              <div class="agency-row agency-row--header border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-700">
+                <div class="px-3 py-2 sm:px-4 sm:py-3" role="columnheader">Agency</div>
+                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">Type</div>
+                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">Signed</div>
+                <div class="agency-col-pop px-2 py-2 sm:px-3 sm:py-3" role="columnheader">Population</div>
+                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">MOA</div>
+                <div class="agency-col-foia px-2 py-2 sm:px-3 sm:py-3" role="columnheader">FOIA</div>
               </div>
-              <div class="px-2 py-2 sm:px-3 sm:py-3">
-                <div class="flex flex-wrap gap-1">
-                  {#each agency.models as model}
-                    <span
-                      class="model-badge"
-                      class:model-badge--jail={model.includes("Jail")}
-                      class:model-badge--taskforce={model.includes("Task")}
-                      class:model-badge--wso={model.includes("Warrant")}
-                      title={model}
-                    >{MODEL_MINI[model] ?? model}</span>
-                  {/each}
-                </div>
-              </div>
-              <div class="px-2 py-2 tabular-nums text-slate-600 sm:px-3 sm:py-3">
-                {agency.signed_date ? agency.signed_date.slice(0, 4) : "—"}
-              </div>
-              <div class="agency-col-pop px-2 py-2 tabular-nums text-slate-600 sm:px-3 sm:py-3">
-                {agency.population ? popFmt.format(agency.population) : "—"}
-              </div>
-              <div class="px-2 py-2 text-xs font-semibold sm:px-3 sm:py-3">
-                {#if agency.moa_url}
-                  <a href={agency.moa_url} target="_blank" rel="noreferrer" class="no-underline hover:underline">↗</a>
-                {:else}
-                  <span class="text-slate-300">—</span>
-                {/if}
-              </div>
-              <div class="agency-col-foia px-2 py-2 text-xs font-semibold sm:px-3 sm:py-3">
-                <a href="https://www.muckrock.com/foi/create/" target="_blank" rel="noreferrer" class="no-underline hover:underline">→</a>
-              </div>
-            </div>
             {/snippet}
-          </VirtualList>
-          {/key}
+            {#snippet row(agency, isCard)}
+              {#if isCard}
+                <div class="agency-card border-b p-3" style="border-color: var(--color-paper-200);">
+                  <div role="cell">
+                    <a
+                      href={localizeHref(`/agency/${agency.slug}`)}
+                      class="font-semibold leading-snug no-underline hover:underline"
+                      style="color: var(--color-ink-900);"
+                    >{agency.name}</a>
+                    <p class="text-xs" style="color: var(--color-ink-500);">
+                      {#if agency.city}{agency.city}{/if}{#if agency.city && agency.state}, {/if}{#if agency.state}<a
+                        href={localizeHref(`/state/${agency.state.toLowerCase()}`)}
+                        class="no-underline hover:underline"
+                      >{agency.state}</a>{/if}
+                    </p>
+                  </div>
+                  <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs" style="color: var(--color-ink-700);">
+                    <div role="cell" class="flex flex-wrap gap-1">
+                      {#each agency.models as model}
+                        <span
+                          class="model-badge"
+                          class:model-badge--jail={model.includes("Jail")}
+                          class:model-badge--taskforce={model.includes("Task")}
+                          class:model-badge--wso={model.includes("Warrant")}
+                          title={model}
+                        >{MODEL_MINI[model] ?? model}</span>
+                      {/each}
+                    </div>
+                    <div role="cell">
+                      <span class="opacity-60">Signed</span>
+                      <span class="tabular-nums font-medium">{agency.signed_date ? agency.signed_date.slice(0, 4) : "—"}</span>
+                    </div>
+                    {#if agency.population}
+                      <div role="cell">
+                        <span class="opacity-60">Population</span>
+                        <span class="tabular-nums font-medium">{popFmt.format(agency.population)}</span>
+                      </div>
+                    {/if}
+                    {#if agency.moa_url}
+                      <a role="cell" href={agency.moa_url} target="_blank" rel="noreferrer" class="font-semibold no-underline hover:underline">MOA ↗</a>
+                    {/if}
+                    <a role="cell" href="https://www.muckrock.com/foi/create/" target="_blank" rel="noreferrer" class="font-semibold no-underline hover:underline">FOIA →</a>
+                  </div>
+                </div>
+              {:else}
+                <div class="agency-row border-b border-slate-100 hover:bg-slate-50">
+                  <div class="px-3 py-2 sm:px-4 sm:py-3" role="cell">
+                    <a
+                      href={localizeHref(`/agency/${agency.slug}`)}
+                      class="font-semibold leading-snug text-slate-900 no-underline hover:underline"
+                    >{agency.name}</a>
+                    <p class="text-xs text-slate-600">
+                      {#if agency.city}{agency.city}{/if}{#if agency.city && agency.state}, {/if}{#if agency.state}<a
+                        href={localizeHref(`/state/${agency.state.toLowerCase()}`)}
+                        class="no-underline hover:underline"
+                      >{agency.state}</a>{/if}
+                    </p>
+                  </div>
+                  <div class="px-2 py-2 sm:px-3 sm:py-3" role="cell">
+                    <div class="flex flex-wrap gap-1">
+                      {#each agency.models as model}
+                        <span
+                          class="model-badge"
+                          class:model-badge--jail={model.includes("Jail")}
+                          class:model-badge--taskforce={model.includes("Task")}
+                          class:model-badge--wso={model.includes("Warrant")}
+                          title={model}
+                        >{MODEL_MINI[model] ?? model}</span>
+                      {/each}
+                    </div>
+                  </div>
+                  <div class="px-2 py-2 tabular-nums text-slate-600 sm:px-3 sm:py-3" role="cell">
+                    {agency.signed_date ? agency.signed_date.slice(0, 4) : "—"}
+                  </div>
+                  <div class="agency-col-pop px-2 py-2 tabular-nums text-slate-600 sm:px-3 sm:py-3" role="cell">
+                    {agency.population ? popFmt.format(agency.population) : "—"}
+                  </div>
+                  <div class="px-2 py-2 text-xs font-semibold sm:px-3 sm:py-3" role="cell">
+                    {#if agency.moa_url}
+                      <a href={agency.moa_url} target="_blank" rel="noreferrer" class="no-underline hover:underline">↗</a>
+                    {:else}
+                      <span class="text-slate-300">—</span>
+                    {/if}
+                  </div>
+                  <div class="agency-col-foia px-2 py-2 text-xs font-semibold sm:px-3 sm:py-3" role="cell">
+                    <a href="https://www.muckrock.com/foi/create/" target="_blank" rel="noreferrer" class="no-underline hover:underline">→</a>
+                  </div>
+                </div>
+              {/if}
+            {/snippet}
+          </ResponsiveDataTable>
         </div>
       {/if}
 
@@ -800,14 +849,16 @@
     .count-label { font-size: 0.62rem; }
   }
 
-  /* Agency virtual list grid. Fixed column tracks (not `auto`) so every row —
-     header included — sizes its columns identically and they line up into a
-     real table. `auto` tracks size to each row's own content, which is what
-     broke the tabular alignment. minmax(0, …) lets the name column shrink and
+  /* Agency virtual list grid — table mode only (ResponsiveDataTable renders
+     this below `isCard`, i.e. only at md:/768px and up), so it no longer
+     needs a narrower mobile column set or hidden columns; the mobile case is
+     the separate .agency-card layout below. Fixed column tracks (not `auto`)
+     so every row — header included — sizes its columns identically and they
+     line up into a real table. minmax(0, …) lets the name column shrink and
      wrap instead of forcing the grid wider than its container. */
   .agency-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 7rem 3.25rem 2.5rem;
+    grid-template-columns: minmax(0, 1fr) 8.5rem 4rem 5.5rem 3.5rem 3.5rem;
     align-items: center;
   }
   /* The virtualized rows live inside a scrolling viewport; on classic
@@ -819,19 +870,6 @@
   .agency-row--header {
     overflow-y: auto;
     scrollbar-gutter: stable;
-  }
-  .agency-col-pop,
-  .agency-col-foia {
-    display: none;
-  }
-  @media (min-width: 640px) {
-    .agency-row {
-      grid-template-columns: minmax(0, 1fr) 8.5rem 4rem 5.5rem 3.5rem 3.5rem;
-    }
-    .agency-col-pop,
-    .agency-col-foia {
-      display: block;
-    }
   }
   /* svelte-virtuallists' inner track. Full width so each grid row spans the
      viewport and its columns line up with the header. (The viewport — .vtlist —
