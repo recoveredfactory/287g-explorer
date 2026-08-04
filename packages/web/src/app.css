@@ -305,18 +305,22 @@
     @apply inline-block rounded px-2 py-0.5 text-xs font-semibold uppercase tracking-wide;
   }
 
+  /* Warm near-black, not white — white text on these three backgrounds
+     fails WCAG AA (checked at 4.09/3.13/3.74:1 against the 4.5:1 normal-text
+     threshold); this clears AA on all three (4.70/6.15/5.14:1). Mirrors
+     MODEL_TEXT_COLORS in $lib/colors.ts — keep the two in sync. */
   .model-badge--jail {
     background: var(--color-model-jail);
-    color: #ffffff;
+    color: #120e09;
   }
 
   .model-badge--taskforce {
     background: var(--color-model-taskforce);
-    color: #ffffff;
+    color: #120e09;
   }
 
   .model-badge--wso {
     background: var(--color-model-wso);
-    color: #ffffff;
+    color: #120e09;
   }
 }

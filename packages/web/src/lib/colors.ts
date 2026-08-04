@@ -9,16 +9,16 @@ export const MODEL_COLORS: Record<string, string> = {
   "Warrant Service Officer": "#5E9148",
 };
 
-// NOTE: white text on these three backgrounds (as used by .model-badge in
-// app.css) checks at 4.09:1 (jail), 3.13:1 (taskforce), 3.74:1 (wso) against
-// WCAG AA's 4.5:1 normal-text threshold — all three fail for small badge
-// text. Pre-existing, not introduced by the UI revamp; flagged here rather
-// than silently changed, since these colors are load-bearing for map/legend/
-// chart comprehension and changing them is out of scope for this pass.
+// White text on these three backgrounds used to check at 4.09:1 (jail),
+// 3.13:1 (taskforce), 3.74:1 (wso) against WCAG AA's 4.5:1 normal-text
+// threshold — all three failed for small badge text. Rather than touch
+// MODEL_COLORS (load-bearing for map/legend/chart comprehension), switched
+// the text to a warm near-black that clears AA against all three:
+// 4.70:1 (jail), 6.15:1 (taskforce), 5.14:1 (wso).
 export const MODEL_TEXT_COLORS: Record<string, string> = {
-  "Jail Enforcement Model": "#ffffff",
-  "Task Force Model": "#ffffff",
-  "Warrant Service Officer": "#ffffff",
+  "Jail Enforcement Model": "#120e09",
+  "Task Force Model": "#120e09",
+  "Warrant Service Officer": "#120e09",
 };
 
 // Dark tints of each model color — for text on light/tinted backgrounds

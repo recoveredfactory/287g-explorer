@@ -670,10 +670,12 @@
           {@const isRemoved = event.removed.length > 0 && event.added.length === 0}
           {@const isAdded = event.added.length > 0}
           <li class="relative pb-5 last:pb-0">
-            <!-- Timeline dot -->
+            <!-- Timeline dot — added/removed colors match the site-wide
+                 growth/decline convention (/timeline's delta bars use the
+                 same pairing: WSO green for added, rose for removed). -->
             <span
-              class="absolute -left-[1.8125rem] top-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-white"
-              style={`background: ${isRemoved ? '#f87171' : isAdded ? '#4ade80' : '#94a3b8'}; box-shadow: 0 0 0 2px ${isRemoved ? '#fca5a5' : isAdded ? '#86efac' : '#cbd5e1'};`}
+              class="absolute -left-[1.8125rem] top-0.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-paper-50"
+              style={`background: ${isRemoved ? '#BE6079' : isAdded ? '#5E9148' : 'var(--color-ink-500)'}; box-shadow: 0 0 0 2px ${isRemoved ? 'rgba(190, 96, 121, 0.3)' : isAdded ? 'rgba(94, 145, 72, 0.3)' : 'rgba(122, 113, 96, 0.3)'};`}
             ></span>
             <time class="block text-xs font-semibold uppercase tracking-wider text-ink-500">
               {dateFmt(event.date)}
@@ -684,13 +686,13 @@
             <ul class="mt-1 space-y-0.5">
               {#each event.added as model}
                 <li class="flex items-center gap-1.5 text-sm text-ink-700">
-                  <span class="text-green-500 font-bold">+</span>
+                  <span class="font-bold" style="color: #5E9148;">+</span>
                   <span>{model}</span>
                 </li>
               {/each}
               {#each event.removed as model}
                 <li class="flex items-center gap-1.5 text-sm text-ink-500 line-through">
-                  <span class="text-red-400 font-bold no-underline" style="text-decoration: none;">−</span>
+                  <span class="font-bold no-underline" style="color: #BE6079; text-decoration: none;">−</span>
                   <span>{model}</span>
                 </li>
               {/each}
