@@ -69,6 +69,13 @@
   const isNavActive = (href: string, current: string): boolean =>
     href === "/" ? current === "/" : current === href || current.startsWith(href + "/");
 
+  // The single "Explore" nav item covers four sibling routes (states index,
+  // rankings, compare, timeline — see DataNavTabs.svelte, which renders the
+  // sub-nav between them) rather than one path prefix.
+  const DATA_NAV_PATHS = ["/states", "/leaderboard", "/compare", "/timeline"];
+  const isDataNavActive = (current: string): boolean =>
+    DATA_NAV_PATHS.some((p) => isNavActive(p, current));
+
   // Session-only dismissal (#93): user gets the banner once per browser
   // session, not once-and-forever. localStorage was too sticky — we'd
   // rather risk re-showing the banner across sessions than lose all
@@ -324,13 +331,8 @@
             ><span class="sm:hidden">{m.nav_map_short()}</span><span class="hidden sm:inline">{m.nav_map()}</span></a>
             <a
               href={localizeHref("/states")}
-              class="no-underline {isNavActive('/states', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
-              aria-current={isNavActive('/states', basePath) ? 'page' : undefined}
-            >{m.nav_states()}</a>
-            <a
-              href={localizeHref("/explore")}
-              class="no-underline {isNavActive('/explore', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
-              aria-current={isNavActive('/explore', basePath) ? 'page' : undefined}
+              class="no-underline {isDataNavActive(basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
+              aria-current={isDataNavActive(basePath) ? 'page' : undefined}
             >{m.nav_explore()}</a>
             <a
               href={localizeHref("/glossary")}

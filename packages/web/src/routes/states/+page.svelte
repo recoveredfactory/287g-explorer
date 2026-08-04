@@ -13,6 +13,7 @@
   import LegislationBadge from "$lib/components/LegislationBadge.svelte";
   import { SHOW_LEGISLATION_STANCE } from "$lib/features";
   import { ogImage } from "$lib/ogImage";
+  import DataNavTabs from "$lib/components/DataNavTabs.svelte";
 
   // Honor the OS reduced-motion setting for the unfurl (a 0ms animation = an
   // instant open, no growth).
@@ -179,6 +180,7 @@
 </svelte:head>
 
 <main id="main-content" class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
+  <DataNavTabs />
   <!-- ── Header ──────────────────────────────────────────────────────────────── -->
   <header>
     <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--color-ink-500);">

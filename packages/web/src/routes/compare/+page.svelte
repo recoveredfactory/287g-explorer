@@ -6,6 +6,7 @@
   import { NAVIGABLE_STATES } from "$lib/states";
   import { MODEL_ORDER, MODEL_COLORS, MODEL_TEXT_COLORS, MODEL_SHORT } from "$lib/colors";
   import { ogImage } from "$lib/ogImage";
+  import DataNavTabs from "$lib/components/DataNavTabs.svelte";
 
   export let data: CompareData;
 
@@ -55,6 +56,7 @@
 </svelte:head>
 
 <main id="main-content" class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+  <DataNavTabs />
   <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--color-ink-500);">{m.compare_eyebrow()}</p>
   <h1 class="mt-1 text-[length:var(--text-h1)] font-black" style="color: var(--color-ink-900);">{m.compare_title()}</h1>
   <p class="prose-editorial mt-3 max-w-xl">{m.compare_subtitle()}</p>
