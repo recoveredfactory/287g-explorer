@@ -97,6 +97,18 @@
     }
   }
 
+  // Removes a single compare card without reopening the search dropdown.
+  // The national card isn't part of `selection` (it's a display-only
+  // aggregate), so removing it just flips the toggle back off.
+  function removeEntry(entry: CompareEntry) {
+    if (entry.national) {
+      includeNational = false;
+      return;
+    }
+    const id = entry.kind === "state" ? entry.row.abbr : entry.row.slug;
+    toggleSelection(entry.kind, id);
+  }
+
   $: q = query.trim().toLowerCase();
 
   $: filteredStates = data.states.filter((s) => !q || s.stateName.toLowerCase().includes(q) || s.abbr.toLowerCase().includes(q));
@@ -307,13 +319,24 @@
       <h2 class="font-serif text-lg font-bold text-ink-900">{m.browse_compare_heading({ count: compareResolved.length })}</h2>
       <div class="compare-grid mt-4 grid grid-cols-1 gap-4" style="--cmp-cols: {Math.min(4, compareDisplay.length)};">
         {#each compareDisplay as entry}
-          <div class="rounded-lg border p-4" style="border-color: {entry.national ? 'var(--color-ink-500)' : 'var(--color-paper-200)'}; background: var(--color-paper-50);">
+          {@const entryName = entry.national ? m.browse_national_label() : entry.kind === "state" ? entry.row.stateName : entry.row.name}
+          <div class="relative rounded-lg border p-4" style="border-color: {entry.national ? 'var(--color-ink-500)' : 'var(--color-paper-200)'}; background: var(--color-paper-50);">
+            <button
+              type="button"
+              on:click={() => removeEntry(entry)}
+              aria-label="{m.browse_remove_item()} {entryName}"
+              class="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full text-ink-500 hover:bg-paper-100 hover:text-ink-900"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-3.5 w-3.5" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
             {#if entry.kind === "state"}
               {@const row = entry.row}
               {#if entry.national}
-                <p class="font-serif text-lg font-bold text-ink-900">{m.browse_national_label()}</p>
+                <p class="font-serif text-lg font-bold text-ink-900 pr-6">{m.browse_national_label()}</p>
               {:else}
-                <a href={localizeHref(`/state/${row.abbr.toLowerCase()}`)} class="font-serif text-lg font-bold no-underline hover:underline text-ink-900">{row.stateName}</a>
+                <a href={localizeHref(`/state/${row.abbr.toLowerCase()}`)} class="font-serif text-lg font-bold no-underline hover:underline text-ink-900 pr-6 block">{row.stateName}</a>
                 <p class="mt-0.5 font-mono text-[11px] tabular-nums text-ink-500">{m.browse_rank({ rank: stateRankByAbbr.get(row.abbr) ?? 0 })}</p>
               {/if}
               <dl class="mt-4 space-y-4">
@@ -359,9 +382,9 @@
             {:else}
               {@const row = entry.row}
               {#if entry.national}
-                <p class="font-serif text-base font-bold leading-tight text-ink-900">{m.browse_national_label()}</p>
+                <p class="font-serif text-base font-bold leading-tight text-ink-900 pr-6">{m.browse_national_label()}</p>
               {:else}
-                <a href={localizeHref(`/agency/${row.slug}`)} class="font-serif text-base font-bold leading-tight no-underline hover:underline text-ink-900">{row.name}</a>
+                <a href={localizeHref(`/agency/${row.slug}`)} class="font-serif text-base font-bold leading-tight no-underline hover:underline text-ink-900 pr-6 block">{row.name}</a>
                 <p class="mt-0.5 text-xs text-ink-500">{row.state}</p>
                 <p class="mt-0.5 font-mono text-[11px] tabular-nums text-ink-500">{m.browse_rank({ rank: agencyRankBySlug.get(row.slug) ?? 0 })}</p>
               {/if}

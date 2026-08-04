@@ -91,6 +91,7 @@
   "browse_add_national": "+ Compare to national",
   "browse_remove_national": "Remove national",
   "browse_national_label": "National",
+  "browse_remove_item": "Remove",
   "state_meta_title": "{state} 287(g) Agencies",
   "state_meta_description": "{count} agencies in {state} participating in the 287(g) immigration enforcement program.",
   "state_eyebrow": "287(g) Program",
