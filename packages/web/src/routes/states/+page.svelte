@@ -14,8 +14,8 @@
   const stateRankByAbbr = new Map(data.states.map((s, i) => [s.abbr, i + 1]));
   const agencyRankBySlug = new Map(data.agencies.map((a, i) => [a.slug, i + 1]));
 
-  // Synthetic aggregate rows, addable to either compare grid via the
-  // "compare to national" toggle — not real, selectable rows (no rank, no
+  // Synthetic aggregate rows, addable to the compare grid via the "compare
+  // to national" toggle — not real, selectable rows (no rank, no
   // detail-page link), just the sum across the full dataset for scale.
   const NATIONAL_ID = "__national__";
   const nationalStateRow: StateRow = {
@@ -49,6 +49,7 @@
   $: description = m.browse_meta_description();
 
   type Mode = "states" | "agencies";
+  type SelItem = { kind: "state" | "agency"; id: string };
 
   // Read once from $page.url (correct on both SSR and hydration, unlike
   // onMount reading location.search — a shared ?view=agencies&sel=... link
@@ -56,10 +57,21 @@
   const initialParams = $page.url.searchParams;
   const initialView = initialParams.get("view");
   let mode: Mode = initialView === "agencies" ? "agencies" : "states";
+
+  // The compare tray is shared across both modes — you can hold up to 3
+  // states and agencies mixed together, since switching modes is just
+  // changing what you're browsing/searching, not what you're comparing.
   const initialSel = initialParams.get("sel");
-  const initialSelSet = new Set((initialSel ?? "").split(",").filter(Boolean));
-  let selectedStates: Set<string> = mode === "states" ? initialSelSet : new Set();
-  let selectedAgencies: Set<string> = mode === "agencies" ? initialSelSet : new Set();
+  const initialSelection: SelItem[] = (initialSel ?? "")
+    .split(",")
+    .filter(Boolean)
+    .map((tok): SelItem => {
+      const [kind, ...rest] = tok.split(":");
+      return { kind: kind === "agency" ? "agency" : "state", id: rest.join(":") };
+    })
+    .slice(0, 3);
+  let selection: SelItem[] = initialSelection;
+
   let query = "";
   let mounted = false;
   let dropdownOpen = false;
@@ -71,17 +83,18 @@
   $: if (browser && mounted) {
     const params = new URLSearchParams();
     params.set("view", mode);
-    const sel = mode === "agencies" ? selectedAgencies : selectedStates;
-    if (sel.size) params.set("sel", [...sel].join(","));
+    if (selection.length) params.set("sel", selection.map((s) => `${s.kind}:${s.id}`).join(","));
     const qs = params.toString();
     history.replaceState(history.state, "", qs ? `?${qs}` : location.pathname);
   }
 
-  function toggleSelection(set: Set<string>, id: string): Set<string> {
-    const next = new Set(set);
-    if (next.has(id)) next.delete(id);
-    else if (next.size < 3) next.add(id);
-    return next;
+  function toggleSelection(kind: "state" | "agency", id: string) {
+    const idx = selection.findIndex((s) => s.kind === kind && s.id === id);
+    if (idx >= 0) {
+      selection = [...selection.slice(0, idx), ...selection.slice(idx + 1)];
+    } else if (selection.length < 3) {
+      selection = [...selection, { kind, id }];
+    }
   }
 
   $: q = query.trim().toLowerCase();
@@ -93,21 +106,38 @@
   $: agenciesTotal = filteredAgenciesAll.length;
   $: filteredAgencies = filteredAgenciesAll.slice(0, DISPLAY_CAP);
 
-  $: compareStates = data.states.filter((s) => selectedStates.has(s.abbr));
-  $: compareAgencies = data.agencies.filter((a) => selectedAgencies.has(a.slug));
+  type CompareEntry =
+    | { kind: "state"; row: StateRow; national: boolean }
+    | { kind: "agency"; row: AgencyRow; national: boolean };
 
-  $: compareStatesDisplay = includeNational ? [...compareStates, nationalStateRow] : compareStates;
-  $: compareAgenciesDisplay = includeNational ? [...compareAgencies, nationalAgencyRow] : compareAgencies;
+  $: compareResolved = selection
+    .map((s): CompareEntry | null => {
+      if (s.kind === "state") {
+        const row = data.states.find((r) => r.abbr === s.id);
+        return row ? { kind: "state", row, national: false } : null;
+      }
+      const row = data.agencies.find((r) => r.slug === s.id);
+      return row ? { kind: "agency", row, national: false } : null;
+    })
+    .filter((e): e is CompareEntry => e !== null);
+
+  // "Compare to national" adds one aggregate card matching whichever mode
+  // you're currently browsing in — contextual to what you were just
+  // looking at, not a second card per type.
+  $: compareDisplay = (includeNational
+    ? [...compareResolved, mode === "agencies"
+        ? { kind: "agency", row: nationalAgencyRow, national: true }
+        : { kind: "state", row: nationalStateRow, national: true }]
+    : compareResolved) as CompareEntry[];
 
   // Bar widths inside the compare cards are relative to the max among the
-  // items actually being compared (not the full dataset) — with only 2-3
-  // selected at a time (plus optionally national), that reads as "how do
-  // these stack up against each other," not an absolute scale most viewers
-  // have no reference for.
-  $: maxCompareAgencyCount = Math.max(1, ...compareStatesDisplay.map((r) => r.agencyCount));
-  $: maxComparePopulationServed = Math.max(1, ...compareStatesDisplay.map((r) => r.populationServed ?? 0));
-  $: maxCompareOfficerCt = Math.max(1, ...compareAgenciesDisplay.map((r) => r.officerCt ?? 0));
-  $: maxComparePopulation = Math.max(1, ...compareAgenciesDisplay.map((r) => r.population ?? 0));
+  // items of the same kind actually being compared, so magnitude reads as
+  // "how do these stack up against each other" rather than an absolute
+  // scale most viewers have no reference for.
+  $: maxCompareAgencyCount = Math.max(1, ...compareDisplay.filter((e) => e.kind === "state").map((e) => (e as { row: StateRow }).row.agencyCount));
+  $: maxComparePopulationServed = Math.max(1, ...compareDisplay.filter((e) => e.kind === "state").map((e) => (e as { row: StateRow }).row.populationServed ?? 0));
+  $: maxCompareOfficerCt = Math.max(1, ...compareDisplay.filter((e) => e.kind === "agency").map((e) => (e as { row: AgencyRow }).row.officerCt ?? 0));
+  $: maxComparePopulation = Math.max(1, ...compareDisplay.filter((e) => e.kind === "agency").map((e) => (e as { row: AgencyRow }).row.population ?? 0));
 
   const barPct = (value: number, max: number) => Math.max(2, Math.round((value / max) * 100));
 
@@ -182,7 +212,7 @@
             <li class="py-6 text-center text-sm" style="color: var(--color-ink-500);">{m.browse_no_results()}</li>
           {/if}
           {#each filteredStates as row (row.abbr)}
-            {@const checked = selectedStates.has(row.abbr)}
+            {@const checked = selection.some((s) => s.kind === "state" && s.id === row.abbr)}
             <li>
               <label
                 class="flex cursor-pointer items-center gap-3 border-b px-3 py-2.5 last:border-b-0"
@@ -191,8 +221,8 @@
                 <input
                   type="checkbox"
                   {checked}
-                  disabled={!checked && selectedStates.size >= 3}
-                  on:change={() => (selectedStates = toggleSelection(selectedStates, row.abbr))}
+                  disabled={!checked && selection.length >= 3}
+                  on:change={() => toggleSelection("state", row.abbr)}
                   class="h-4 w-4 shrink-0 rounded"
                 />
                 <a
@@ -213,7 +243,7 @@
             <li class="py-6 text-center text-sm" style="color: var(--color-ink-500);">{m.browse_no_results()}</li>
           {/if}
           {#each filteredAgencies as row (row.slug)}
-            {@const checked = selectedAgencies.has(row.slug)}
+            {@const checked = selection.some((s) => s.kind === "agency" && s.id === row.slug)}
             <li>
               <label
                 class="flex cursor-pointer items-center gap-3 border-b px-3 py-2.5 last:border-b-0"
@@ -222,8 +252,8 @@
                 <input
                   type="checkbox"
                   {checked}
-                  disabled={!checked && selectedAgencies.size >= 3}
-                  on:change={() => (selectedAgencies = toggleSelection(selectedAgencies, row.slug))}
+                  disabled={!checked && selection.length >= 3}
+                  on:change={() => toggleSelection("agency", row.slug)}
                   class="h-4 w-4 shrink-0 rounded"
                 />
                 <a
@@ -254,10 +284,9 @@
   </div>
 
   <!-- Selection bar -->
-  {#if (mode === "states" ? selectedStates.size : selectedAgencies.size) > 0}
-    {@const n = mode === "states" ? selectedStates.size : selectedAgencies.size}
+  {#if selection.length > 0}
     <div class="mt-3 flex items-center justify-between gap-3 rounded-md border px-3 py-2" style="border-color: #BE6079; background: var(--color-paper-100);">
-      <span class="text-sm font-semibold" style="color: var(--color-ink-900);">{m.browse_selected_count({ count: n })}</span>
+      <span class="text-sm font-semibold" style="color: var(--color-ink-900);">{m.browse_selected_count({ count: selection.length })}</span>
       <div class="flex items-center gap-3">
         <button
           type="button"
@@ -267,7 +296,7 @@
         >{includeNational ? m.browse_remove_national() : m.browse_add_national()}</button>
         <button
           type="button"
-          on:click={() => { if (mode === "states") selectedStates = new Set(); else selectedAgencies = new Set(); includeNational = false; }}
+          on:click={() => { selection = []; includeNational = false; }}
           class="text-xs font-semibold underline underline-offset-2"
           style="color: var(--color-ink-700);"
         >{m.browse_clear_selection()}</button>
@@ -276,105 +305,98 @@
   {/if}
 
   <!-- Compare -->
-  {#if mode === "states" && compareStates.length > 0}
+  {#if compareDisplay.length > 0}
     <section class="mt-10 border-t pt-8" style="border-color: var(--color-paper-200);">
-      <h2 class="font-serif text-lg font-bold" style="color: var(--color-ink-900);">{m.browse_compare_heading({ count: compareStates.length })}</h2>
-      <div class="compare-grid mt-4 grid grid-cols-1 gap-4" style="--cmp-cols: {Math.min(4, compareStatesDisplay.length)};">
-        {#each compareStatesDisplay as row}
-          {@const isNational = row.abbr === NATIONAL_ID}
-          <div class="rounded-lg border p-4" style="border-color: {isNational ? 'var(--color-ink-500)' : 'var(--color-paper-200)'}; background: var(--color-paper-50);">
-            {#if isNational}
-              <p class="font-serif text-lg font-bold" style="color: var(--color-ink-900);">{m.browse_national_label()}</p>
-            {:else}
-              <a href={localizeHref(`/state/${row.abbr.toLowerCase()}`)} class="font-serif text-lg font-bold no-underline hover:underline" style="color: var(--color-ink-900);">{row.stateName}</a>
-              <p class="mt-0.5 font-mono text-[11px] tabular-nums" style="color: var(--color-ink-500);">{m.browse_rank({ rank: stateRankByAbbr.get(row.abbr) ?? 0 })}</p>
-            {/if}
-            <dl class="mt-4 space-y-4">
-              <div>
-                <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_agencies()}</dt>
-                <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{intFmt.format(row.agencyCount)}</dd>
-                <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
-                  <div class="h-full rounded-full" style="width: {barPct(row.agencyCount, maxCompareAgencyCount)}%; background: var(--color-ink-700);"></div>
-                </div>
-              </div>
-              {#if row.populationServed}
+      <h2 class="font-serif text-lg font-bold" style="color: var(--color-ink-900);">{m.browse_compare_heading({ count: compareResolved.length })}</h2>
+      <div class="compare-grid mt-4 grid grid-cols-1 gap-4" style="--cmp-cols: {Math.min(4, compareDisplay.length)};">
+        {#each compareDisplay as entry}
+          <div class="rounded-lg border p-4" style="border-color: {entry.national ? 'var(--color-ink-500)' : 'var(--color-paper-200)'}; background: var(--color-paper-50);">
+            {#if entry.kind === "state"}
+              {@const row = entry.row}
+              {#if entry.national}
+                <p class="font-serif text-lg font-bold" style="color: var(--color-ink-900);">{m.browse_national_label()}</p>
+              {:else}
+                <a href={localizeHref(`/state/${row.abbr.toLowerCase()}`)} class="font-serif text-lg font-bold no-underline hover:underline" style="color: var(--color-ink-900);">{row.stateName}</a>
+                <p class="mt-0.5 font-mono text-[11px] tabular-nums" style="color: var(--color-ink-500);">{m.browse_rank({ rank: stateRankByAbbr.get(row.abbr) ?? 0 })}</p>
+              {/if}
+              <dl class="mt-4 space-y-4">
                 <div>
-                  <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_population()}</dt>
-                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{popFmt.format(row.populationServed)}</dd>
+                  <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_agencies()}</dt>
+                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{intFmt.format(row.agencyCount)}</dd>
                   <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
-                    <div class="h-full rounded-full" style="width: {barPct(row.populationServed, maxComparePopulationServed)}%; background: var(--color-ink-700);"></div>
+                    <div class="h-full rounded-full" style="width: {barPct(row.agencyCount, maxCompareAgencyCount)}%; background: var(--color-ink-700);"></div>
                   </div>
                 </div>
-              {/if}
-              {#if localLePct(row)}
-                <div>
-                  <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_participation()}</dt>
-                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{localLePct(row)}</dd>
-                  <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
-                    <div class="h-full rounded-full" style="width: {Math.max(2, Math.round(((row.localParticipating ?? 0) / (row.localLeAgencies || 1)) * 100))}%; background: var(--color-ink-700);"></div>
-                  </div>
-                </div>
-              {/if}
-              <div>
-                <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_models()}</dt>
-                <dd class="mt-1.5 space-y-1">
-                  {#each MODEL_ORDER as model}
-                    {#if row.modelCounts[model]}
-                      <div class="flex items-center justify-between gap-2 text-xs">
-                        <span class="rounded px-1.5 py-0.5 font-semibold" style="background: {MODEL_COLORS[model]}; color: {MODEL_TEXT_COLORS[model]};">{MODEL_SHORT[model]}</span>
-                        <span class="font-mono tabular-nums" style="color: var(--color-ink-700);">{row.modelCounts[model]}</span>
-                      </div>
-                    {/if}
-                  {/each}
-                </dd>
-              </div>
-            </dl>
-          </div>
-        {/each}
-      </div>
-    </section>
-  {:else if mode === "agencies" && compareAgencies.length > 0}
-    <section class="mt-10 border-t pt-8" style="border-color: var(--color-paper-200);">
-      <h2 class="font-serif text-lg font-bold" style="color: var(--color-ink-900);">{m.browse_compare_heading({ count: compareAgencies.length })}</h2>
-      <div class="compare-grid mt-4 grid grid-cols-1 gap-4" style="--cmp-cols: {Math.min(4, compareAgenciesDisplay.length)};">
-        {#each compareAgenciesDisplay as row}
-          {@const isNational = row.slug === NATIONAL_ID}
-          <div class="rounded-lg border p-4" style="border-color: {isNational ? 'var(--color-ink-500)' : 'var(--color-paper-200)'}; background: var(--color-paper-50);">
-            {#if isNational}
-              <p class="font-serif text-base font-bold leading-tight" style="color: var(--color-ink-900);">{m.browse_national_label()}</p>
-            {:else}
-              <a href={localizeHref(`/agency/${row.slug}`)} class="font-serif text-base font-bold leading-tight no-underline hover:underline" style="color: var(--color-ink-900);">{row.name}</a>
-              <p class="mt-0.5 text-xs" style="color: var(--color-ink-500);">{row.state}</p>
-              <p class="mt-0.5 font-mono text-[11px] tabular-nums" style="color: var(--color-ink-500);">{m.browse_rank({ rank: agencyRankBySlug.get(row.slug) ?? 0 })}</p>
-            {/if}
-            <dl class="mt-4 space-y-4">
-              <div>
-                <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.leaderboard_unit_officers()}</dt>
-                <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{row.officerCt ? intFmt.format(row.officerCt) : "—"}</dd>
-                {#if row.officerCt}
-                  <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
-                    <div class="h-full rounded-full" style="width: {barPct(row.officerCt, maxCompareOfficerCt)}%; background: var(--color-ink-700);"></div>
+                {#if row.populationServed}
+                  <div>
+                    <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_population()}</dt>
+                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{popFmt.format(row.populationServed)}</dd>
+                    <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
+                      <div class="h-full rounded-full" style="width: {barPct(row.populationServed, maxComparePopulationServed)}%; background: var(--color-ink-700);"></div>
+                    </div>
                   </div>
                 {/if}
-              </div>
-              {#if row.population}
-                <div>
-                  <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.browse_agency_population()}</dt>
-                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{popFmt.format(row.population)}</dd>
-                  <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
-                    <div class="h-full rounded-full" style="width: {barPct(row.population, maxComparePopulation)}%; background: var(--color-ink-700);"></div>
+                {#if localLePct(row)}
+                  <div>
+                    <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_participation()}</dt>
+                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{localLePct(row)}</dd>
+                    <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
+                      <div class="h-full rounded-full" style="width: {Math.max(2, Math.round(((row.localParticipating ?? 0) / (row.localLeAgencies || 1)) * 100))}%; background: var(--color-ink-700);"></div>
+                    </div>
                   </div>
-                </div>
-              {/if}
-              {#if row.primary_model}
+                {/if}
                 <div>
-                  <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.browse_agency_model_label()}</dt>
-                  <dd class="mt-1">
-                    <span class="rounded px-1.5 py-0.5 text-xs font-semibold" style="background: {MODEL_COLORS[row.primary_model]}; color: {MODEL_TEXT_COLORS[row.primary_model]};">{MODEL_SHORT[row.primary_model]}</span>
+                  <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_models()}</dt>
+                  <dd class="mt-1.5 space-y-1">
+                    {#each MODEL_ORDER as modelName}
+                      {#if row.modelCounts[modelName]}
+                        <div class="flex items-center justify-between gap-2 text-xs">
+                          <span class="rounded px-1.5 py-0.5 font-semibold" style="background: {MODEL_COLORS[modelName]}; color: {MODEL_TEXT_COLORS[modelName]};">{MODEL_SHORT[modelName]}</span>
+                          <span class="font-mono tabular-nums" style="color: var(--color-ink-700);">{row.modelCounts[modelName]}</span>
+                        </div>
+                      {/if}
+                    {/each}
                   </dd>
                 </div>
+              </dl>
+            {:else}
+              {@const row = entry.row}
+              {#if entry.national}
+                <p class="font-serif text-base font-bold leading-tight" style="color: var(--color-ink-900);">{m.browse_national_label()}</p>
+              {:else}
+                <a href={localizeHref(`/agency/${row.slug}`)} class="font-serif text-base font-bold leading-tight no-underline hover:underline" style="color: var(--color-ink-900);">{row.name}</a>
+                <p class="mt-0.5 text-xs" style="color: var(--color-ink-500);">{row.state}</p>
+                <p class="mt-0.5 font-mono text-[11px] tabular-nums" style="color: var(--color-ink-500);">{m.browse_rank({ rank: agencyRankBySlug.get(row.slug) ?? 0 })}</p>
               {/if}
-            </dl>
+              <dl class="mt-4 space-y-4">
+                <div>
+                  <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.leaderboard_unit_officers()}</dt>
+                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{row.officerCt ? intFmt.format(row.officerCt) : "—"}</dd>
+                  {#if row.officerCt}
+                    <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
+                      <div class="h-full rounded-full" style="width: {barPct(row.officerCt, maxCompareOfficerCt)}%; background: var(--color-ink-700);"></div>
+                    </div>
+                  {/if}
+                </div>
+                {#if row.population}
+                  <div>
+                    <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.browse_agency_population()}</dt>
+                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{popFmt.format(row.population)}</dd>
+                    <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
+                      <div class="h-full rounded-full" style="width: {barPct(row.population, maxComparePopulation)}%; background: var(--color-ink-700);"></div>
+                    </div>
+                  </div>
+                {/if}
+                {#if row.primary_model}
+                  <div>
+                    <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.browse_agency_model_label()}</dt>
+                    <dd class="mt-1">
+                      <span class="rounded px-1.5 py-0.5 text-xs font-semibold" style="background: {MODEL_COLORS[row.primary_model]}; color: {MODEL_TEXT_COLORS[row.primary_model]};">{MODEL_SHORT[row.primary_model]}</span>
+                    </dd>
+                  </div>
+                {/if}
+              </dl>
+            {/if}
           </div>
         {/each}
       </div>
