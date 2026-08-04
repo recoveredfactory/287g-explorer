@@ -450,8 +450,8 @@
               aria-pressed={active}
               class="rounded border px-3 py-1.5 text-xs font-semibold transition-colors"
               style={active
-                ? `background: ${MODEL_COLORS[model]}; border-color: ${MODEL_COLORS[model]}; color: ${MODEL_TEXT_COLORS[model] ?? "#fff"};`
-                : `background: ${MODEL_COLORS[model]}22; border-color: ${MODEL_COLORS[model]}88; color: ${MODEL_DARK_COLORS[model] ?? "#334155"};`}
+                ? `background: ${MODEL_COLORS[model]}; border-color: ${MODEL_COLORS[model]}; color: ${MODEL_TEXT_COLORS[model] ?? "var(--color-ink-900)"};`
+                : `background: ${MODEL_COLORS[model]}22; border-color: ${MODEL_COLORS[model]}88; color: ${MODEL_DARK_COLORS[model] ?? "var(--color-ink-700)"};`}
             >
               {MODEL_SHORT[model]}
               <span class="ml-1 tabular-nums opacity-70">{modelCounts[model]}</span>
