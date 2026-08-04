@@ -211,7 +211,8 @@
   {/if}
   {#if mismatchTarget && !isVideoRoute}
     <div
-      class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b border-blue-200 bg-blue-50 px-4 py-2 text-center text-sm text-blue-950"
+      class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 border-b px-4 py-2 text-center text-sm"
+      style="border-color: var(--color-paper-200); background: var(--color-paper-100); color: var(--color-ink-900);"
       role="region"
       aria-label={mismatchTarget === "es" ? "Sugerencia de idioma" : "Language suggestion"}
     >
@@ -221,12 +222,14 @@
           href={hrefFor("es")}
           on:click={() => rememberLocale("es")}
           data-sveltekit-reload
-          class="font-semibold text-blue-900 underline underline-offset-2 hover:text-blue-700"
+          class="font-semibold underline underline-offset-2"
+          style="color: var(--color-ink-900);"
         >Sí, cambiar</a>
         <button
           type="button"
           on:click={dismissMismatch}
-          class="text-xs text-blue-700/70 underline underline-offset-2 hover:text-blue-700"
+          class="text-xs underline underline-offset-2"
+          style="color: var(--color-ink-500);"
         >No, gracias</button>
       {:else}
         <span>Prefer this page in English?</span>
@@ -234,12 +237,14 @@
           href={hrefFor("en")}
           on:click={() => rememberLocale("en")}
           data-sveltekit-reload
-          class="font-semibold text-blue-900 underline underline-offset-2 hover:text-blue-700"
+          class="font-semibold underline underline-offset-2"
+          style="color: var(--color-ink-900);"
         >Yes, switch</a>
         <button
           type="button"
           on:click={dismissMismatch}
-          class="text-xs text-blue-700/70 underline underline-offset-2 hover:text-blue-700"
+          class="text-xs underline underline-offset-2"
+          style="color: var(--color-ink-500);"
         >No thanks</button>
       {/if}
     </div>
@@ -247,7 +252,7 @@
   {#if analysisPromoVisible && !isVideoRoute}
     <div
       class="flex items-center justify-center gap-2 px-4 py-2 text-center text-sm text-white sm:gap-3"
-      style="background-color: #2c2c2c;"
+      style="background-color: var(--color-ink-900);"
       role="region"
       aria-label={m.analysis_promo_aria()}
     >
@@ -391,7 +396,7 @@
 {#if bannerVisible && !isVideoRoute}
   <div
     class="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between gap-4 px-4 py-4 sm:px-6"
-    style="background-color: #2c2c2c;"
+    style="background-color: var(--color-ink-900);"
     role="complementary"
     aria-label="Support Recovered Factory"
   >
