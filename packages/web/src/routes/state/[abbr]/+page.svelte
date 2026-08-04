@@ -16,7 +16,7 @@
 
   export let data: PageData;
 
-  $: ({ abbr, stateName, agencies, stateMeta, snapshotDate, modelCounts, agencyTypeCounts, trendMonths, trend } = data);
+  $: ({ abbr, stateName, agencyCountRank, agencyCountRankTotal, agencies, stateMeta, snapshotDate, modelCounts, agencyTypeCounts, trendMonths, trend } = data);
 
   // Shared by <title>/description and the og:/twitter: tags so a share preview
   // can never drift from the page itself.
@@ -205,6 +205,9 @@
       <span>
         <span class="font-semibold text-ink-900">{intFmt.format(agencies.length)}</span>
         {agencies.length === 1 ? m.state_agency_one() : m.state_agency_other()}
+        {#if agencyCountRank > 0}
+          <span class="font-mono text-xs text-ink-500">{m.state_rank_of({ rank: agencyCountRank, total: agencyCountRankTotal })}</span>
+        {/if}
       </span>
       {#if localLePct !== null}
         <span>
@@ -228,11 +231,17 @@
         </span>
       {/if}
     </div>
-    {#if snapshotDate}
-      <p class="mt-2 text-xs italic text-ink-500">
-        {m.state_as_of({ date: dateFmt.format(new Date(snapshotDate)) })}
-      </p>
-    {/if}
+    <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+      {#if snapshotDate}
+        <p class="text-xs italic text-ink-500">
+          {m.state_as_of({ date: dateFmt.format(new Date(snapshotDate)) })}
+        </p>
+      {/if}
+      <a
+        href={localizeHref(`/states?sel=state:${abbr}`)}
+        class="text-xs font-semibold text-ink-900 underline underline-offset-2 hover:text-ink-700"
+      >{m.state_compare_cta()} →</a>
+    </div>
   </header>
 
   <!-- ── Map ──────────────────────────────────────────────────────────────── -->

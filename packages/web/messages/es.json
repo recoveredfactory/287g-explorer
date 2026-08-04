@@ -103,6 +103,8 @@
   "state_covered": "cubiertos",
   "state_local_le_pct": "de las agencias policiales locales",
   "state_as_of": "Al {date}",
+  "state_rank_of": "N.º{rank} de {total} estados por número de agencias",
+  "state_compare_cta": "Comparar este estado",
   "state_map_heading": "Ubicaciones de las agencias",
   "state_map_aria": "Mapa que muestra las ubicaciones de las agencias 287(g) en {state}",
   "state_agencies_heading": "Agencias de {state}",
