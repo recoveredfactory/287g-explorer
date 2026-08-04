@@ -652,12 +652,12 @@
           >
             {#snippet header()}
               <div class="agency-row agency-row--header border-b text-xs font-bold uppercase tracking-wider" style="border-color: var(--color-paper-200); background: var(--color-paper-100); color: var(--color-ink-700);">
-                <div class="px-3 py-2 sm:px-4 sm:py-3" role="columnheader">Agency</div>
-                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">Type</div>
-                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">Signed</div>
-                <div class="agency-col-pop px-2 py-2 sm:px-3 sm:py-3" role="columnheader">Population</div>
-                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">MOA</div>
-                <div class="agency-col-foia px-2 py-2 sm:px-3 sm:py-3" role="columnheader">FOIA</div>
+                <div class="px-3 py-2 sm:px-4 sm:py-3" role="columnheader">{m.state_th_agency()}</div>
+                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">{m.state_th_type()}</div>
+                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">{m.state_th_signed()}</div>
+                <div class="agency-col-pop px-2 py-2 sm:px-3 sm:py-3" role="columnheader">{m.state_th_population()}</div>
+                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">{m.state_th_moa()}</div>
+                <div class="agency-col-foia px-2 py-2 sm:px-3 sm:py-3" role="columnheader">{m.home_th_foia()}</div>
               </div>
             {/snippet}
             {#snippet row(agency, isCard)}
@@ -689,19 +689,19 @@
                       {/each}
                     </div>
                     <div role="cell">
-                      <span class="opacity-60">Signed</span>
+                      <span class="opacity-60">{m.state_th_signed()}</span>
                       <span class="tabular-nums font-medium">{agency.signed_date ? agency.signed_date.slice(0, 4) : "—"}</span>
                     </div>
                     {#if agency.population}
                       <div role="cell">
-                        <span class="opacity-60">Population</span>
+                        <span class="opacity-60">{m.state_th_population()}</span>
                         <span class="tabular-nums font-medium">{popFmt.format(agency.population)}</span>
                       </div>
                     {/if}
                     {#if agency.moa_url}
-                      <a role="cell" href={agency.moa_url} target="_blank" rel="noreferrer" class="font-semibold no-underline hover:underline">MOA ↗</a>
+                      <a role="cell" href={agency.moa_url} target="_blank" rel="noreferrer" class="font-semibold no-underline hover:underline">{m.state_th_moa()} ↗</a>
                     {/if}
-                    <a role="cell" href="https://www.muckrock.com/foi/create/" target="_blank" rel="noreferrer" class="font-semibold no-underline hover:underline">FOIA →</a>
+                    <a role="cell" href="https://www.muckrock.com/foi/create/" target="_blank" rel="noreferrer" class="font-semibold no-underline hover:underline">{m.home_th_foia()} →</a>
                   </div>
                 </div>
               {:else}

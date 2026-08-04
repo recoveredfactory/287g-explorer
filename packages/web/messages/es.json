@@ -138,6 +138,7 @@
   "home_search_no_match": "Ninguna agencia coincide con tu búsqueda.",
   "home_search_use_detected_state": "Usar mi estado ({state})",
   "home_view_state_page": "Ver la página de {state}",
+  "home_th_foia": "FOIA",
   "home_search_year_signed": "Año de firma",
   "home_pagination_previous": "Anterior",
   "home_pagination_next": "Siguiente",
