@@ -12,6 +12,13 @@
  * Output: packages/pipeline/data/scraped_contacts.json
  *   { "STATE|normalizedName": { website?, phone?, address? } }
  *
+ * That output is TRACKED — commit it after a run. It used to be gitignored,
+ * which meant CI never had it: ingest took the "Scraped contacts not found"
+ * branch on every tick and shipped null phone/address for 180 agencies, with
+ * nothing louder than a log line to say so (#269). CI does not and should not
+ * run this scraper — it's Playwright against bot-protected directory sites and
+ * the data barely moves.
+ *
  * Idempotent — merges with existing file, skipping already-scraped entries.
  * Run: pnpm -F pipeline scrape:contacts
  */

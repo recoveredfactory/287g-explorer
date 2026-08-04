@@ -21,6 +21,7 @@
   export let data: PageData;
 
   const siteUrl = import.meta.env.PUBLIC_SITE_URL ?? "https://287g.recoveredfactory.net";
+  const homeUrl = siteUrl + localizeHref("/").replace(/\/$/, "");
   const title = m.home_meta_title();
   $: description = data.agencyCountUnique > 0
     ? m.home_meta_description_with_count({ count: intFmt.format(data.agencyCountUnique) })
@@ -266,7 +267,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
-  <meta property="og:url" content={siteUrl} />
+  <meta property="og:url" content={homeUrl} />
   <meta property="og:image" content={ogImage('home.png')} />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />

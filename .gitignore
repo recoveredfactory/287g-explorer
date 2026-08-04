@@ -11,7 +11,6 @@ packages/web/.assets
 packages/pipeline/__pycache__
 packages/pipeline/.cache
 packages/pipeline/.venv
-packages/pipeline/data/scraped_contacts.json
 packages/pipeline/data/csllea_*.tsv
 *.pyc
 .DS_Store
