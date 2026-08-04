@@ -33,11 +33,11 @@
 </svelte:head>
 
 <main id="main-content" class="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
-  <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--color-ink-500);">{m.timeline_eyebrow()}</p>
-  <h1 class="mt-1 text-[length:var(--text-h1)] font-black" style="color: var(--color-ink-900);">{m.timeline_title()}</h1>
-  <p class="prose-editorial mt-3">{m.timeline_subtitle()}</p>
+  <p class="text-xs font-semibold uppercase tracking-widest text-ink-500">{m.timeline_eyebrow()}</p>
+  <h1 class="mt-1 text-2xl font-black text-ink-900 sm:text-3xl">{m.timeline_title()}</h1>
+  <p class="mt-3 max-w-prose text-sm text-ink-700 sm:text-base">{m.timeline_subtitle()}</p>
   {#if data.snapshotDate}
-    <p class="mt-2 text-xs italic" style="color: var(--color-ink-500);">{m.timeline_as_of({ date: dateFmt.format(new Date(data.snapshotDate)) })}</p>
+    <p class="mt-2 text-xs italic text-ink-500">{m.timeline_as_of({ date: dateFmt.format(new Date(data.snapshotDate)) })}</p>
   {/if}
 
   <ol class="mt-10 space-y-0 border-l-2 pl-5" style="border-color: var(--color-paper-200);">
@@ -51,20 +51,20 @@
           aria-hidden="true"
         ></span>
 
-        <time class="block font-mono text-xs font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">
+        <time class="block font-mono text-xs font-semibold uppercase tracking-wider text-ink-500">
           {monthLabel(mo.ym)}
         </time>
 
         <div class="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-          <p class="font-serif text-lg font-bold" style="color: var(--color-ink-900);">
-            {intFmt.format(mo.total)} <span class="text-sm font-normal" style="color: var(--color-ink-500);">{m.timeline_total_label()}</span>
+          <p class="font-serif text-lg font-bold text-ink-900">
+            {intFmt.format(mo.total)} <span class="text-sm font-normal text-ink-500">{m.timeline_total_label()}</span>
           </p>
           {#if highlighted}
             <span class="rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white" style="background: #BE6079;">{m.timeline_highlight_label()}</span>
           {/if}
         </div>
 
-        <p class="mt-0.5 text-sm" style="color: var(--color-ink-700);">
+        <p class="mt-0.5 text-sm text-ink-700">
           {#if mo.delta > 0}
             {m.timeline_delta_up({ count: signedIntFmt.format(mo.delta) })}
           {:else if mo.delta < 0}
