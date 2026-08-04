@@ -89,6 +89,11 @@
   let mounted = false;
   let dropdownOpen = false;
 
+  const modelSummary = (modelCounts: Record<string, number>): string =>
+    MODEL_ORDER.filter((model) => modelCounts[model])
+      .map((model) => `${MODEL_SHORT[model]}: ${modelCounts[model]}`)
+      .join(", ");
+
   const DISPLAY_CAP = 150;
 
   $: if (browser && !mounted) mounted = true;
@@ -280,6 +285,13 @@
                 >
                   <p class="truncate text-sm font-semibold text-ink-900">{row.stateName}</p>
                 </a>
+                <span class="flex shrink-0 items-center gap-1" role="img" aria-label={modelSummary(row.modelCounts)}>
+                  {#each MODEL_ORDER as model}
+                    {#if row.modelCounts[model]}
+                      <span class="inline-block h-2 w-2 rounded-full" style="background: {MODEL_COLORS[model]};" aria-hidden="true"></span>
+                    {/if}
+                  {/each}
+                </span>
                 <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">
                   {m.browse_rank({ rank: stateRankByAbbr.get(row.abbr) ?? 0 })} · {intFmt.format(row.agencyCount)} {m.leaderboard_unit_agencies()}
                 </span>
@@ -363,6 +375,13 @@
           <li class="flex items-center gap-3 py-2.5">
             <span class="w-6 shrink-0 font-mono text-xs tabular-nums text-ink-500">{stateRankByAbbr.get(row.abbr)}</span>
             <a href={localizeHref(`/state/${row.abbr.toLowerCase()}`)} class="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900 no-underline hover:underline">{row.stateName}</a>
+            <span class="flex shrink-0 items-center gap-1" role="img" aria-label={modelSummary(row.modelCounts)}>
+              {#each MODEL_ORDER as model}
+                {#if row.modelCounts[model]}
+                  <span class="inline-block h-2 w-2 rounded-full" style="background: {MODEL_COLORS[model]};" aria-hidden="true"></span>
+                {/if}
+              {/each}
+            </span>
             <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">{intFmt.format(row.agencyCount)} {m.leaderboard_unit_agencies()}</span>
           </li>
         {/each}
