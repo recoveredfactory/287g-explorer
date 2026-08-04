@@ -40,6 +40,19 @@
   };
   let includeNational = false;
 
+  // Top-of-page summary strip + default preview lists — shown unconditionally
+  // so the page has real content on load instead of just empty controls
+  // waiting for a search.
+  const statesWithAgencies = data.states.filter((s) => s.agencyCount > 0).length;
+  const totalAgencies = data.agencies.length;
+  const nationalParticipationPct =
+    nationalStateRow.localLeAgencies
+      ? Math.round(((nationalStateRow.localParticipating ?? 0) / nationalStateRow.localLeAgencies) * 100)
+      : null;
+  const TOP_N = 10;
+  const topStates = data.states.slice(0, TOP_N);
+  const topAgencies = data.agencies.slice(0, TOP_N);
+
   const localeTag = getLocale() === "es" ? "es-MX" : "en-US";
   const intFmt = new Intl.NumberFormat(localeTag);
   const popFmt = new Intl.NumberFormat(localeTag, { notation: "compact", maximumFractionDigits: 1 });
@@ -189,6 +202,30 @@
     <p class="mt-2 text-xs italic text-ink-500">{m.browse_as_of({ date: dateFmt.format(new Date(data.snapshotDate)) })}</p>
   {/if}
 
+  <!-- Summary strip -->
+  <dl class="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 border-y border-paper-200 py-6 sm:grid-cols-4">
+    <div>
+      <dt class="text-xs font-semibold uppercase tracking-widest text-ink-500">{m.browse_stat_states()}</dt>
+      <dd class="mt-1 font-mono text-2xl font-bold tabular-nums text-ink-900">{intFmt.format(statesWithAgencies)}</dd>
+    </div>
+    <div>
+      <dt class="text-xs font-semibold uppercase tracking-widest text-ink-500">{m.browse_stat_agencies()}</dt>
+      <dd class="mt-1 font-mono text-2xl font-bold tabular-nums text-ink-900">{intFmt.format(totalAgencies)}</dd>
+    </div>
+    {#if nationalStateRow.populationServed}
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-widest text-ink-500">{m.browse_stat_population()}</dt>
+        <dd class="mt-1 font-mono text-2xl font-bold tabular-nums text-ink-900">{popFmt.format(nationalStateRow.populationServed)}</dd>
+      </div>
+    {/if}
+    {#if nationalParticipationPct !== null}
+      <div>
+        <dt class="text-xs font-semibold uppercase tracking-widest text-ink-500">{m.browse_stat_participation()}</dt>
+        <dd class="mt-1 font-mono text-2xl font-bold tabular-nums text-ink-900">{nationalParticipationPct}%</dd>
+      </div>
+    {/if}
+  </dl>
+
   <!-- Mode toggle -->
   <div class="mt-6 flex w-fit gap-1 rounded-md border border-paper-200 bg-paper-100 p-1">
     {#each [["states", m.browse_mode_states()], ["agencies", m.browse_mode_agencies()]] as [key, label]}
@@ -312,6 +349,40 @@
       </div>
     </div>
   {/if}
+
+  <!-- Default top-N preview — real content on the page without requiring a
+       search first; the interactive checklist above stays search-gated
+       per feedback, this is just a glanceable, read-only top-10. -->
+  <section class="mt-8">
+    <h2 class="font-serif text-lg font-bold text-ink-900">
+      {mode === "states" ? m.browse_top_states_heading() : m.browse_top_agencies_heading()}
+    </h2>
+    <ol class="mt-3 divide-y divide-paper-100 border-y border-paper-100">
+      {#if mode === "states"}
+        {#each topStates as row (row.abbr)}
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 shrink-0 font-mono text-xs tabular-nums text-ink-500">{stateRankByAbbr.get(row.abbr)}</span>
+            <a href={localizeHref(`/state/${row.abbr.toLowerCase()}`)} class="min-w-0 flex-1 truncate text-sm font-semibold text-ink-900 no-underline hover:underline">{row.stateName}</a>
+            <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">{intFmt.format(row.agencyCount)} {m.leaderboard_unit_agencies()}</span>
+          </li>
+        {/each}
+      {:else}
+        {#each topAgencies as row (row.slug)}
+          <li class="flex items-center gap-3 py-2.5">
+            <span class="w-6 shrink-0 font-mono text-xs tabular-nums text-ink-500">{agencyRankBySlug.get(row.slug)}</span>
+            <a href={localizeHref(`/agency/${row.slug}`)} class="min-w-0 flex-1 no-underline hover:underline">
+              <p class="truncate text-sm font-semibold text-ink-900">{row.name}</p>
+              <p class="truncate text-xs text-ink-500">{row.state}</p>
+            </a>
+            {#if row.primary_model}
+              <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold" style="background: {MODEL_COLORS[row.primary_model]}; color: {MODEL_TEXT_COLORS[row.primary_model]};">{MODEL_SHORT[row.primary_model]}</span>
+            {/if}
+            <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">{row.officerCt ? `${intFmt.format(row.officerCt)} ${m.leaderboard_unit_officers()}` : "—"}</span>
+          </li>
+        {/each}
+      {/if}
+    </ol>
+  </section>
 
   <!-- Compare -->
   {#if compareDisplay.length > 0}
