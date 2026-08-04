@@ -27,13 +27,13 @@
     goto(`${localizeHref("/compare")}${qs}`, { keepFocus: true, noScroll: true });
   }
 
-  function addState(abbr: string) {
-    if (!abbr || data.selected.includes(abbr) || data.selected.length >= 3) return;
-    updateSelection([...data.selected, abbr]);
-  }
-
-  function removeState(abbr: string) {
-    updateSelection(data.selected.filter((a) => a !== abbr));
+  function toggleState(abbr: string) {
+    if (data.selected.includes(abbr)) {
+      updateSelection(data.selected.filter((a) => a !== abbr));
+    } else {
+      if (data.selected.length >= 3) return;
+      updateSelection([...data.selected, abbr]);
+    }
   }
 
   const localLePct = (row: CompareData["rows"][number]): string | null => {
@@ -61,34 +61,32 @@
   <h1 class="mt-1 text-[length:var(--text-h1)] font-black" style="color: var(--color-ink-900);">{m.compare_title()}</h1>
   <p class="prose-editorial mt-3 max-w-xl">{m.compare_subtitle()}</p>
 
-  <!-- Picker -->
-  <div class="mt-6 flex flex-wrap items-center gap-2">
-    {#each data.selected as abbr}
-      <button
-        type="button"
-        on:click={() => removeState(abbr)}
-        aria-label={m.compare_remove({ state: NAVIGABLE_STATES[abbr] })}
-        class="flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-semibold text-white"
-        style="background: var(--color-ink-900); border-color: var(--color-ink-900);"
-      >
-        {NAVIGABLE_STATES[abbr]}
-        <span aria-hidden="true" class="opacity-70">×</span>
-      </button>
-    {/each}
-    {#if data.selected.length < 3}
-      <select
-        class="rounded-md border py-1.5 pl-3 pr-7 text-sm focus:outline-none focus:ring-1"
-        style="border-color: var(--color-paper-200); background: var(--color-paper-50); color: var(--color-ink-700);"
-        aria-label={m.compare_picker_label()}
-        on:change={(e) => { addState(e.currentTarget.value); e.currentTarget.value = ""; }}
-      >
-        <option value="">{m.compare_picker_label()}</option>
-        {#each allAbbrs.filter((a) => !data.selected.includes(a)) as abbr}
-          <option value={abbr}>{NAVIGABLE_STATES[abbr]}</option>
-        {/each}
-      </select>
-      <span class="text-xs" style="color: var(--color-ink-500);">{m.compare_max_note()}</span>
-    {/if}
+  <!-- Picker: every state as a toggle chip — tap to select (up to 3), tap
+       again to deselect. Replaces an earlier one-at-a-time dropdown, which
+       meant scrolling a ~52-item native select just to add a second state. -->
+  <div class="mt-6">
+    <p class="text-xs font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">
+      {m.compare_picker_label()} · {m.compare_max_note()}
+    </p>
+    <div class="mt-2 flex flex-wrap gap-1.5" role="group" aria-label={m.compare_picker_label()}>
+      {#each allAbbrs as abbr}
+        {@const selected = data.selected.includes(abbr)}
+        {@const disabled = !selected && data.selected.length >= 3}
+        <button
+          type="button"
+          on:click={() => toggleState(abbr)}
+          {disabled}
+          aria-pressed={selected}
+          aria-label={selected ? m.compare_remove({ state: NAVIGABLE_STATES[abbr] }) : NAVIGABLE_STATES[abbr]}
+          class="rounded border px-2.5 py-1 text-xs font-semibold transition-colors {disabled ? 'cursor-not-allowed opacity-40' : ''}"
+          style={selected
+            ? "background: var(--color-ink-900); border-color: var(--color-ink-900); color: #fff;"
+            : "background: var(--color-paper-50); border-color: var(--color-paper-200); color: var(--color-ink-700);"}
+        >
+          {NAVIGABLE_STATES[abbr]}
+        </button>
+      {/each}
+    </div>
   </div>
 
   {#if data.snapshotDate}
