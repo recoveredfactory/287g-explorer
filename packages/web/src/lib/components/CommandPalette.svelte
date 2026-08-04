@@ -236,7 +236,7 @@
       aria-controls="command-palette-list"
       aria-label={m.search_palette_trigger_aria()}
       aria-activedescendant={dropdownOpen && flatResults[activeIdx] ? `cp-opt-${flatResults[activeIdx].key}` : undefined}
-      class="w-full rounded-full border py-1.5 pl-8 pr-2.5 text-xs focus:outline-none focus:ring-1 sm:text-sm"
+      class="w-full rounded-md border py-1.5 pl-8 pr-2.5 text-xs focus:outline-none focus:ring-1 sm:text-sm"
       style="border-color: var(--color-paper-200); background: var(--color-paper-100); color: var(--color-ink-900);"
       onkeydown={onKeydown}
       onfocus={() => { if (query.trim()) dropdownOpen = true; ensureAgenciesLoaded(); }}
