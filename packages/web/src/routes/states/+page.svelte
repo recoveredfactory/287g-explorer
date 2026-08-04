@@ -169,6 +169,17 @@
     ...(includeNationalAgencies ? [{ kind: "agency", row: nationalAgencyRow, national: true } as CompareEntry] : []),
   ];
 
+  const barPct = (value: number, max: number) => Math.max(2, Math.round((value / max) * 100));
+
+  const localLePctNum = (row: StateRow): number | null => {
+    if (!row.localLeAgencies) return null;
+    return Math.round(((row.localParticipating ?? 0) / row.localLeAgencies) * 100);
+  };
+  const localLePct = (row: StateRow): string | null => {
+    const pct = localLePctNum(row);
+    return pct === null ? null : `${pct}%`;
+  };
+
   // Bar widths inside the compare cards are relative to the max among the
   // items of the same kind actually being compared, so magnitude reads as
   // "how do these stack up against each other" rather than an absolute
@@ -177,13 +188,15 @@
   $: maxComparePopulationServed = Math.max(1, ...compareDisplay.filter((e) => e.kind === "state").map((e) => (e as { row: StateRow }).row.populationServed ?? 0));
   $: maxCompareOfficerCt = Math.max(1, ...compareDisplay.filter((e) => e.kind === "agency").map((e) => (e as { row: AgencyRow }).row.officerCt ?? 0));
   $: maxComparePopulation = Math.max(1, ...compareDisplay.filter((e) => e.kind === "agency").map((e) => (e as { row: AgencyRow }).row.population ?? 0));
+  $: maxCompareParticipationPct = Math.max(1, ...compareDisplay.filter((e) => e.kind === "state").map((e) => localLePctNum((e as { row: StateRow }).row) ?? 0));
 
-  const barPct = (value: number, max: number) => Math.max(2, Math.round((value / max) * 100));
-
-  const localLePct = (row: StateRow): string | null => {
-    if (!row.localLeAgencies) return null;
-    return `${Math.round(((row.localParticipating ?? 0) / row.localLeAgencies) * 100)}%`;
-  };
+  // Best-value highlighting is only meaningful once there's actually more
+  // than one item of that kind to compare — with a single state or agency
+  // in the tray, every stat is trivially "the leading one," which isn't
+  // useful to call out.
+  $: compareStateN = compareDisplay.filter((e) => e.kind === "state").length;
+  $: compareAgencyN = compareDisplay.filter((e) => e.kind === "agency").length;
+  const isLeading = (value: number, max: number, n: number) => n > 1 && value > 0 && value === max;
 
   function onOutsidePointer(e: PointerEvent) {
     if (!(e.target as HTMLElement).closest(".browse-search")) dropdownOpen = false;
@@ -439,6 +452,7 @@
             </button>
             {#if entry.kind === "state"}
               {@const row = entry.row}
+              {@const leadAgencies = isLeading(row.agencyCount, maxCompareAgencyCount, compareStateN)}
               {#if entry.national}
                 <p class="font-serif text-lg font-bold text-ink-900 pr-6">{m.browse_national_label()}</p>
               {:else}
@@ -448,26 +462,34 @@
               <dl class="mt-4 space-y-4">
                 <div>
                   <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.compare_stat_agencies()}</dt>
-                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums text-ink-900">{intFmt.format(row.agencyCount)}</dd>
+                  <dd class="mt-0.5 flex items-baseline gap-1 font-mono text-xl font-bold tabular-nums" style="color: {leadAgencies ? '#BE6079' : 'var(--color-ink-900)'};">
+                    {#if leadAgencies}<span aria-hidden="true">✓</span>{/if}{intFmt.format(row.agencyCount)}
+                  </dd>
                   <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
-                    <div class="h-full rounded-full" style="width: {barPct(row.agencyCount, maxCompareAgencyCount)}%; background: var(--color-ink-700);"></div>
+                    <div class="h-full rounded-full" style="width: {barPct(row.agencyCount, maxCompareAgencyCount)}%; background: {leadAgencies ? '#BE6079' : 'var(--color-ink-700)'};"></div>
                   </div>
                 </div>
                 {#if row.populationServed}
+                  {@const leadPop = isLeading(row.populationServed, maxComparePopulationServed, compareStateN)}
                   <div>
                     <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.compare_stat_population()}</dt>
-                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums text-ink-900">{popFmt.format(row.populationServed)}</dd>
+                    <dd class="mt-0.5 flex items-baseline gap-1 font-mono text-xl font-bold tabular-nums" style="color: {leadPop ? '#BE6079' : 'var(--color-ink-900)'};">
+                      {#if leadPop}<span aria-hidden="true">✓</span>{/if}{popFmt.format(row.populationServed)}
+                    </dd>
                     <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
-                      <div class="h-full rounded-full" style="width: {barPct(row.populationServed, maxComparePopulationServed)}%; background: var(--color-ink-700);"></div>
+                      <div class="h-full rounded-full" style="width: {barPct(row.populationServed, maxComparePopulationServed)}%; background: {leadPop ? '#BE6079' : 'var(--color-ink-700)'};"></div>
                     </div>
                   </div>
                 {/if}
                 {#if localLePct(row)}
+                  {@const leadPct = isLeading(localLePctNum(row) ?? 0, maxCompareParticipationPct, compareStateN)}
                   <div>
                     <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.compare_stat_participation()}</dt>
-                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums text-ink-900">{localLePct(row)}</dd>
+                    <dd class="mt-0.5 flex items-baseline gap-1 font-mono text-xl font-bold tabular-nums" style="color: {leadPct ? '#BE6079' : 'var(--color-ink-900)'};">
+                      {#if leadPct}<span aria-hidden="true">✓</span>{/if}{localLePct(row)}
+                    </dd>
                     <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
-                      <div class="h-full rounded-full" style="width: {Math.max(2, Math.round(((row.localParticipating ?? 0) / (row.localLeAgencies || 1)) * 100))}%; background: var(--color-ink-700);"></div>
+                      <div class="h-full rounded-full" style="width: {Math.max(2, Math.round(((row.localParticipating ?? 0) / (row.localLeAgencies || 1)) * 100))}%; background: {leadPct ? '#BE6079' : 'var(--color-ink-700)'};"></div>
                     </div>
                   </div>
                 {/if}
@@ -487,6 +509,7 @@
               </dl>
             {:else}
               {@const row = entry.row}
+              {@const leadOfficers = isLeading(row.officerCt ?? 0, maxCompareOfficerCt, compareAgencyN)}
               {#if entry.national}
                 <p class="font-serif text-base font-bold leading-tight text-ink-900 pr-6">{m.browse_national_label()}</p>
               {:else}
@@ -497,19 +520,24 @@
               <dl class="mt-4 space-y-4">
                 <div>
                   <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.leaderboard_unit_officers()}</dt>
-                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums text-ink-900">{row.officerCt ? intFmt.format(row.officerCt) : "—"}</dd>
+                  <dd class="mt-0.5 flex items-baseline gap-1 font-mono text-xl font-bold tabular-nums" style="color: {leadOfficers ? '#BE6079' : 'var(--color-ink-900)'};">
+                    {#if leadOfficers}<span aria-hidden="true">✓</span>{/if}{row.officerCt ? intFmt.format(row.officerCt) : "—"}
+                  </dd>
                   {#if row.officerCt}
                     <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
-                      <div class="h-full rounded-full" style="width: {barPct(row.officerCt, maxCompareOfficerCt)}%; background: var(--color-ink-700);"></div>
+                      <div class="h-full rounded-full" style="width: {barPct(row.officerCt, maxCompareOfficerCt)}%; background: {leadOfficers ? '#BE6079' : 'var(--color-ink-700)'};"></div>
                     </div>
                   {/if}
                 </div>
                 {#if row.population}
+                  {@const leadAgencyPop = isLeading(row.population, maxComparePopulation, compareAgencyN)}
                   <div>
                     <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.browse_agency_population()}</dt>
-                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums text-ink-900">{popFmt.format(row.population)}</dd>
+                    <dd class="mt-0.5 flex items-baseline gap-1 font-mono text-xl font-bold tabular-nums" style="color: {leadAgencyPop ? '#BE6079' : 'var(--color-ink-900)'};">
+                      {#if leadAgencyPop}<span aria-hidden="true">✓</span>{/if}{popFmt.format(row.population)}
+                    </dd>
                     <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
-                      <div class="h-full rounded-full" style="width: {barPct(row.population, maxComparePopulation)}%; background: var(--color-ink-700);"></div>
+                      <div class="h-full rounded-full" style="width: {barPct(row.population, maxComparePopulation)}%; background: {leadAgencyPop ? '#BE6079' : 'var(--color-ink-700)'};"></div>
                     </div>
                   </div>
                 {/if}
