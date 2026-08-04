@@ -2,7 +2,6 @@
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "skip_to_main": "Skip to main content",
   "nav_map": "National",
-  "nav_map_short": "Nat'l",
   "nav_states": "States",
   "nav_leaderboard": "Rankings",
   "nav_glossary": "Glossary",

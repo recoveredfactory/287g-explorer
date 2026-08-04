@@ -2,7 +2,6 @@
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "skip_to_main": "Saltar al contenido principal",
   "nav_map": "Nacional",
-  "nav_map_short": "Nac.",
   "nav_states": "Estados",
   "nav_leaderboard": "Clasificaciones",
   "nav_glossary": "Glosario",

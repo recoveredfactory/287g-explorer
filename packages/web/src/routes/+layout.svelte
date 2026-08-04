@@ -325,11 +325,6 @@
         <div class="mt-2.5 flex items-center sm:mt-0 sm:flex-1">
           <nav class="flex items-center gap-5 text-sm font-semibold sm:ml-8">
             <a
-              href={localizeHref("/")}
-              class="no-underline {isNavActive('/', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
-              aria-current={isNavActive('/', basePath) ? 'page' : undefined}
-            ><span class="sm:hidden">{m.nav_map_short()}</span><span class="hidden sm:inline">{m.nav_map()}</span></a>
-            <a
               href={localizeHref("/states")}
               class="no-underline {isDataNavActive(basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
               aria-current={isDataNavActive(basePath) ? 'page' : undefined}
