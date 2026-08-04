@@ -97,6 +97,11 @@
   let mounted = false;
   let dropdownOpen = false;
 
+  // Dropdown only opens once there's an actual query — focusing the empty
+  // search box shouldn't dump the full 53-state/1,700-agency list; you
+  // search first, then the matching results (and their checkboxes) appear.
+  $: dropdownOpen = query.trim().length > 0;
+
   const DISPLAY_CAP = 150;
 
   $: if (browser && !mounted) mounted = true;
@@ -245,7 +250,6 @@
     <input
       type="search"
       bind:value={query}
-      on:focus={() => (dropdownOpen = true)}
       placeholder={m.browse_search_placeholder()}
       class="w-full rounded-md border border-paper-200 bg-paper-50 py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-500 focus:border-ink-700 focus:outline-none focus:ring-1 focus:ring-ink-700"
     />
@@ -366,7 +370,10 @@
   <!-- Default top-10 previews — real content on the page without requiring a
        search first; the interactive checklist above stays search-gated per
        feedback, these are just glanceable, read-only top-10s shown side by
-       side now that there's no States/Agencies mode to switch between. -->
+       side now that there's no States/Agencies mode to switch between.
+       Hidden once a compare is active (selection non-empty) so the compare
+       grid isn't buried below two full top-10 lists — reappears on Clear. -->
+  {#if selection.length === 0}
   <div class="mt-8 grid gap-x-8 gap-y-8 sm:grid-cols-2">
     <section>
       <h2 class="font-serif text-lg font-bold text-ink-900">{m.browse_top_states_heading()}</h2>
@@ -410,6 +417,7 @@
       </ol>
     </section>
   </div>
+  {/if}
 
   <!-- Compare -->
   {#if compareDisplay.length > 0}
