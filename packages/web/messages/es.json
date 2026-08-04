@@ -282,6 +282,8 @@
   "agency_meta_description_model": "Bajo el modelo {model}.",
   "agency_meta_description_pop": "Sirve a una población de aproximadamente {pop}.",
   "agency_breadcrumb_home": "Inicio",
+  "agency_rank_of": "N.º{rank} de {total} agencias por número de oficiales",
+  "agency_compare_cta": "Comparar esta agencia",
   "agency_signed_date": "Acuerdo firmado",
   "agency_first_seen": "Primera aparición en los datos de ICE",
   "agency_ended_heading": "Ya no figura en los datos de 287(g) de ICE",

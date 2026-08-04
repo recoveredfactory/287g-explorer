@@ -296,6 +296,15 @@
             >{agency.state}</a>
           {/if}
         </p>
+        <p class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+          {#if data.officerCtRank > 0}
+            <span class="font-mono text-ink-500">{m.agency_rank_of({ rank: data.officerCtRank, total: data.officerCtRankTotal })}</span>
+          {/if}
+          <a
+            href={localizeHref(`/states?sel=agency:${agency.slug}`)}
+            class="font-semibold text-ink-900 underline underline-offset-2 hover:text-ink-700"
+          >{m.agency_compare_cta()} →</a>
+        </p>
       </div>
       <div class="flex flex-wrap gap-1.5">
         {#each agency.models as model}
