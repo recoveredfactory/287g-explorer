@@ -38,7 +38,15 @@
     officerCt: data.agencies.reduce((sum, a) => sum + (a.officerCt ?? 0), 0),
     population: data.agencies.reduce((sum, a) => sum + (a.population ?? 0), 0) || null,
   };
-  let includeNational = false;
+  // Split in two (rather than one shared flag) so removing one national card
+  // from the compare grid doesn't also drop the other.
+  let includeNationalStates = false;
+  let includeNationalAgencies = false;
+  function toggleNational() {
+    const anyOn = includeNationalStates || includeNationalAgencies;
+    includeNationalStates = !anyOn;
+    includeNationalAgencies = !anyOn;
+  }
 
   // Top-of-page summary strip + default preview lists — shown unconditionally
   // so the page has real content on load instead of just empty controls
@@ -61,19 +69,19 @@
   $: title = m.browse_meta_title();
   $: description = m.browse_meta_description();
 
-  type Mode = "states" | "agencies";
   type SelItem = { kind: "state" | "agency"; id: string };
 
-  // Read once from $page.url (correct on both SSR and hydration, unlike
-  // onMount reading location.search — a shared ?view=agencies&sel=... link
-  // used to render "states" first and flash to "agencies" post-hydration).
-  const initialParams = $page.url.searchParams;
-  const initialView = initialParams.get("view");
-  let mode: Mode = initialView === "agencies" ? "agencies" : "states";
+  // Compare tray holds a mix of states and agencies together — browsing
+  // states or agencies is just search, not a mode switch, so there's only
+  // ever one selection to track. Capped at SELECTION_MAX: high enough to be
+  // useful, low enough that the compare grid still reads at a glance rather
+  // than becoming a spreadsheet.
+  const SELECTION_MAX = 5;
 
-  // The compare tray is shared across both modes — you can hold up to 3
-  // states and agencies mixed together, since switching modes is just
-  // changing what you're browsing/searching, not what you're comparing.
+  // Read once from $page.url (correct on both SSR and hydration, unlike
+  // onMount reading location.search — a shared ?sel=... link used to render
+  // an empty tray first and flash to populated after hydration).
+  const initialParams = $page.url.searchParams;
   const initialSel = initialParams.get("sel");
   const initialSelection: SelItem[] = (initialSel ?? "")
     .split(",")
@@ -82,7 +90,7 @@
       const [kind, ...rest] = tok.split(":");
       return { kind: kind === "agency" ? "agency" : "state", id: rest.join(":") };
     })
-    .slice(0, 3);
+    .slice(0, SELECTION_MAX);
   let selection: SelItem[] = initialSelection;
 
   let query = "";
@@ -95,7 +103,6 @@
 
   $: if (browser && mounted) {
     const params = new URLSearchParams();
-    params.set("view", mode);
     if (selection.length) params.set("sel", selection.map((s) => `${s.kind}:${s.id}`).join(","));
     const qs = params.toString();
     history.replaceState(history.state, "", qs ? `?${qs}` : location.pathname);
@@ -105,17 +112,18 @@
     const idx = selection.findIndex((s) => s.kind === kind && s.id === id);
     if (idx >= 0) {
       selection = [...selection.slice(0, idx), ...selection.slice(idx + 1)];
-    } else if (selection.length < 3) {
+    } else if (selection.length < SELECTION_MAX) {
       selection = [...selection, { kind, id }];
     }
   }
 
   // Removes a single compare card without reopening the search dropdown.
-  // The national card isn't part of `selection` (it's a display-only
-  // aggregate), so removing it just flips the toggle back off.
+  // National cards aren't part of `selection` (they're display-only
+  // aggregates), so removing one just flips its own toggle back off.
   function removeEntry(entry: CompareEntry) {
     if (entry.national) {
-      includeNational = false;
+      if (entry.kind === "state") includeNationalStates = false;
+      else includeNationalAgencies = false;
       return;
     }
     const id = entry.kind === "state" ? entry.row.abbr : entry.row.slug;
@@ -146,14 +154,11 @@
     })
     .filter((e): e is CompareEntry => e !== null);
 
-  // "Compare to national" adds one aggregate card matching whichever mode
-  // you're currently browsing in — contextual to what you were just
-  // looking at, not a second card per type.
-  $: compareDisplay = (includeNational
-    ? [...compareResolved, mode === "agencies"
-        ? { kind: "agency", row: nationalAgencyRow, national: true }
-        : { kind: "state", row: nationalStateRow, national: true }]
-    : compareResolved) as CompareEntry[];
+  $: compareDisplay = [
+    ...compareResolved,
+    ...(includeNationalStates ? [{ kind: "state", row: nationalStateRow, national: true } as CompareEntry] : []),
+    ...(includeNationalAgencies ? [{ kind: "agency", row: nationalAgencyRow, national: true } as CompareEntry] : []),
+  ];
 
   // Bar widths inside the compare cards are relative to the max among the
   // items of the same kind actually being compared, so magnitude reads as
@@ -226,22 +231,10 @@
     {/if}
   </dl>
 
-  <!-- Mode toggle -->
-  <div class="mt-6 flex w-fit gap-1 rounded-md border border-paper-200 bg-paper-100 p-1">
-    {#each [["states", m.browse_mode_states()], ["agencies", m.browse_mode_agencies()]] as [key, label]}
-      <button
-        type="button"
-        on:click={() => { mode = key as Mode; query = ""; includeNational = false; }}
-        class="rounded px-3 py-1.5 text-sm font-semibold transition-colors"
-        class:bg-ink-900={mode === key}
-        class:text-white={mode === key}
-        class:text-ink-700={mode !== key}
-      >{label}</button>
-    {/each}
-  </div>
-
-  <!-- Search + inline checklist dropdown -->
-  <div class="browse-search relative mt-3 max-w-sm">
+  <!-- Search + grouped inline checklist dropdown — one box searches both
+       states and agencies at once (no States/Agencies mode switch: the
+       compare tray already mixes both, so browsing shouldn't be split). -->
+  <div class="browse-search relative mt-6 max-w-sm">
     <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
     </svg>
@@ -249,95 +242,101 @@
       type="search"
       bind:value={query}
       on:focus={() => (dropdownOpen = true)}
-      placeholder={mode === "states" ? m.browse_search_placeholder_states() : m.browse_search_placeholder_agencies()}
+      placeholder={m.browse_search_placeholder()}
       class="w-full rounded-md border border-paper-200 bg-paper-50 py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-500 focus:border-ink-700 focus:outline-none focus:ring-1 focus:ring-ink-700"
     />
 
     {#if dropdownOpen}
-      <ol class="absolute left-0 top-full z-20 mt-1.5 max-h-96 w-full overflow-y-auto rounded-md border border-paper-200 bg-paper-50 shadow-lg">
-        {#if mode === "states"}
-          {#if filteredStates.length === 0}
-            <li class="py-6 text-center text-sm text-ink-500">{m.browse_no_results()}</li>
-          {/if}
-          {#each filteredStates as row (row.abbr)}
-            {@const checked = selection.some((s) => s.kind === "state" && s.id === row.abbr)}
-            <li>
-              <label
-                class="flex cursor-pointer items-center gap-3 border-b px-3 py-2.5 last:border-b-0"
-                style="border-color: var(--color-paper-100); background: {checked ? 'var(--color-paper-100)' : 'transparent'};"
-              >
-                <input
-                  type="checkbox"
-                  {checked}
-                  disabled={!checked && selection.length >= 3}
-                  on:change={() => toggleSelection("state", row.abbr)}
-                  class="h-4 w-4 shrink-0 rounded"
-                />
-                <a
-                  href={localizeHref(`/state/${row.abbr.toLowerCase()}`)}
-                  class="min-w-0 flex-1 no-underline hover:underline"
-                  on:click|stopPropagation
-                >
-                  <p class="truncate text-sm font-semibold text-ink-900">{row.stateName}</p>
-                </a>
-                <span class="flex shrink-0 items-center gap-2">
-                  {#each MODEL_ORDER as model}
-                    {#if row.modelCounts[model]}
-                      <span class="flex items-center gap-1 font-mono text-[11px] tabular-nums text-ink-700" aria-label="{MODEL_SHORT[model]}: {row.modelCounts[model]}">
-                        <span class="inline-block h-2 w-2 rounded-full" style="background: {MODEL_COLORS[model]};" aria-hidden="true"></span>
-                        {row.modelCounts[model]}
-                      </span>
-                    {/if}
-                  {/each}
-                </span>
-                <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">
-                  {m.browse_rank({ rank: stateRankByAbbr.get(row.abbr) ?? 0 })} · {intFmt.format(row.agencyCount)} {m.leaderboard_unit_agencies()}
-                </span>
-              </label>
-            </li>
-          {/each}
-        {:else}
-          {#if filteredAgencies.length === 0}
-            <li class="py-6 text-center text-sm text-ink-500">{m.browse_no_results()}</li>
-          {/if}
-          {#each filteredAgencies as row (row.slug)}
-            {@const checked = selection.some((s) => s.kind === "agency" && s.id === row.slug)}
-            <li>
-              <label
-                class="flex cursor-pointer items-center gap-3 border-b px-3 py-2.5 last:border-b-0"
-                style="border-color: var(--color-paper-100); background: {checked ? 'var(--color-paper-100)' : 'transparent'};"
-              >
-                <input
-                  type="checkbox"
-                  {checked}
-                  disabled={!checked && selection.length >= 3}
-                  on:change={() => toggleSelection("agency", row.slug)}
-                  class="h-4 w-4 shrink-0 rounded"
-                />
-                <a
-                  href={localizeHref(`/agency/${row.slug}`)}
-                  class="min-w-0 flex-1 no-underline hover:underline"
-                  on:click|stopPropagation
-                >
-                  <p class="truncate text-sm font-semibold text-ink-900">{row.name}</p>
-                  <p class="truncate text-xs text-ink-500">{row.state}</p>
-                </a>
-                {#if row.primary_model}
-                  <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold" style="background: {MODEL_COLORS[row.primary_model]}; color: {MODEL_TEXT_COLORS[row.primary_model]};">{MODEL_SHORT[row.primary_model]}</span>
-                {/if}
-                <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">
-                  {m.browse_rank({ rank: agencyRankBySlug.get(row.slug) ?? 0 })} · {row.officerCt ? `${intFmt.format(row.officerCt)} ${m.leaderboard_unit_officers()}` : "—"}
-                </span>
-              </label>
-            </li>
-          {/each}
-          {#if agenciesTotal > DISPLAY_CAP}
-            <li class="py-3 text-center text-xs italic text-ink-500">
-              {m.browse_result_count_capped({ shown: DISPLAY_CAP, total: intFmt.format(agenciesTotal) })}
-            </li>
-          {/if}
+      <div class="absolute left-0 top-full z-20 mt-1.5 max-h-96 w-full overflow-y-auto rounded-md border border-paper-200 bg-paper-50 shadow-lg">
+        {#if filteredStates.length === 0 && filteredAgencies.length === 0}
+          <p class="py-6 text-center text-sm text-ink-500">{m.browse_no_results()}</p>
         {/if}
-      </ol>
+
+        {#if filteredStates.length > 0}
+          <p class="border-b border-paper-100 bg-paper-100 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.search_palette_group_states()}</p>
+          <ol>
+            {#each filteredStates as row (row.abbr)}
+              {@const checked = selection.some((s) => s.kind === "state" && s.id === row.abbr)}
+              <li>
+                <label
+                  class="flex cursor-pointer items-center gap-3 border-b px-3 py-2.5 last:border-b-0"
+                  style="border-color: var(--color-paper-100); background: {checked ? 'var(--color-paper-100)' : 'transparent'};"
+                >
+                  <input
+                    type="checkbox"
+                    {checked}
+                    disabled={!checked && selection.length >= SELECTION_MAX}
+                    on:change={() => toggleSelection("state", row.abbr)}
+                    class="h-4 w-4 shrink-0 rounded"
+                  />
+                  <a
+                    href={localizeHref(`/state/${row.abbr.toLowerCase()}`)}
+                    class="min-w-0 flex-1 no-underline hover:underline"
+                    on:click|stopPropagation
+                  >
+                    <p class="truncate text-sm font-semibold text-ink-900">{row.stateName}</p>
+                  </a>
+                  <span class="flex shrink-0 items-center gap-2">
+                    {#each MODEL_ORDER as model}
+                      {#if row.modelCounts[model]}
+                        <span class="flex items-center gap-1 font-mono text-[11px] tabular-nums text-ink-700" aria-label="{MODEL_SHORT[model]}: {row.modelCounts[model]}">
+                          <span class="inline-block h-2 w-2 rounded-full" style="background: {MODEL_COLORS[model]};" aria-hidden="true"></span>
+                          {row.modelCounts[model]}
+                        </span>
+                      {/if}
+                    {/each}
+                  </span>
+                  <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">
+                    {m.browse_rank({ rank: stateRankByAbbr.get(row.abbr) ?? 0 })} · {intFmt.format(row.agencyCount)} {m.leaderboard_unit_agencies()}
+                  </span>
+                </label>
+              </li>
+            {/each}
+          </ol>
+        {/if}
+
+        {#if filteredAgencies.length > 0}
+          <p class="border-b border-t border-paper-100 bg-paper-100 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.search_palette_group_agencies()}</p>
+          <ol>
+            {#each filteredAgencies as row (row.slug)}
+              {@const checked = selection.some((s) => s.kind === "agency" && s.id === row.slug)}
+              <li>
+                <label
+                  class="flex cursor-pointer items-center gap-3 border-b px-3 py-2.5 last:border-b-0"
+                  style="border-color: var(--color-paper-100); background: {checked ? 'var(--color-paper-100)' : 'transparent'};"
+                >
+                  <input
+                    type="checkbox"
+                    {checked}
+                    disabled={!checked && selection.length >= SELECTION_MAX}
+                    on:change={() => toggleSelection("agency", row.slug)}
+                    class="h-4 w-4 shrink-0 rounded"
+                  />
+                  <a
+                    href={localizeHref(`/agency/${row.slug}`)}
+                    class="min-w-0 flex-1 no-underline hover:underline"
+                    on:click|stopPropagation
+                  >
+                    <p class="truncate text-sm font-semibold text-ink-900">{row.name}</p>
+                    <p class="truncate text-xs text-ink-500">{row.state}</p>
+                  </a>
+                  {#if row.primary_model}
+                    <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold" style="background: {MODEL_COLORS[row.primary_model]}; color: {MODEL_TEXT_COLORS[row.primary_model]};">{MODEL_SHORT[row.primary_model]}</span>
+                  {/if}
+                  <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">
+                    {m.browse_rank({ rank: agencyRankBySlug.get(row.slug) ?? 0 })} · {row.officerCt ? `${intFmt.format(row.officerCt)} ${m.leaderboard_unit_officers()}` : "—"}
+                  </span>
+                </label>
+              </li>
+            {/each}
+            {#if agenciesTotal > DISPLAY_CAP}
+              <li class="py-3 text-center text-xs italic text-ink-500">
+                {m.browse_result_count_capped({ shown: DISPLAY_CAP, total: intFmt.format(agenciesTotal) })}
+              </li>
+            {/if}
+          </ol>
+        {/if}
+      </div>
     {/if}
   </div>
 
@@ -348,27 +347,26 @@
       <div class="flex items-center gap-3">
         <button
           type="button"
-          on:click={() => (includeNational = !includeNational)}
+          on:click={toggleNational}
           class="text-xs font-semibold text-ink-700 underline underline-offset-2"
-        >{includeNational ? m.browse_remove_national() : m.browse_add_national()}</button>
+        >{(includeNationalStates || includeNationalAgencies) ? m.browse_remove_national() : m.browse_add_national()}</button>
         <button
           type="button"
-          on:click={() => { selection = []; includeNational = false; }}
+          on:click={() => { selection = []; includeNationalStates = false; includeNationalAgencies = false; }}
           class="text-xs font-semibold text-ink-700 underline underline-offset-2"
         >{m.browse_clear_selection()}</button>
       </div>
     </div>
   {/if}
 
-  <!-- Default top-N preview — real content on the page without requiring a
-       search first; the interactive checklist above stays search-gated
-       per feedback, this is just a glanceable, read-only top-10. -->
-  <section class="mt-8">
-    <h2 class="font-serif text-lg font-bold text-ink-900">
-      {mode === "states" ? m.browse_top_states_heading() : m.browse_top_agencies_heading()}
-    </h2>
-    <ol class="mt-3 divide-y divide-paper-100 border-y border-paper-100">
-      {#if mode === "states"}
+  <!-- Default top-10 previews — real content on the page without requiring a
+       search first; the interactive checklist above stays search-gated per
+       feedback, these are just glanceable, read-only top-10s shown side by
+       side now that there's no States/Agencies mode to switch between. -->
+  <div class="mt-8 grid gap-x-8 gap-y-8 sm:grid-cols-2">
+    <section>
+      <h2 class="font-serif text-lg font-bold text-ink-900">{m.browse_top_states_heading()}</h2>
+      <ol class="mt-3 divide-y divide-paper-100 border-y border-paper-100">
         {#each topStates as row (row.abbr)}
           <li class="flex items-center gap-3 py-2.5">
             <span class="w-6 shrink-0 font-mono text-xs tabular-nums text-ink-500">{stateRankByAbbr.get(row.abbr)}</span>
@@ -386,7 +384,12 @@
             <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">{intFmt.format(row.agencyCount)} {m.leaderboard_unit_agencies()}</span>
           </li>
         {/each}
-      {:else}
+      </ol>
+    </section>
+
+    <section>
+      <h2 class="font-serif text-lg font-bold text-ink-900">{m.browse_top_agencies_heading()}</h2>
+      <ol class="mt-3 divide-y divide-paper-100 border-y border-paper-100">
         {#each topAgencies as row (row.slug)}
           <li class="flex items-center gap-3 py-2.5">
             <span class="w-6 shrink-0 font-mono text-xs tabular-nums text-ink-500">{agencyRankBySlug.get(row.slug)}</span>
@@ -400,15 +403,15 @@
             <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">{row.officerCt ? `${intFmt.format(row.officerCt)} ${m.leaderboard_unit_officers()}` : "—"}</span>
           </li>
         {/each}
-      {/if}
-    </ol>
-  </section>
+      </ol>
+    </section>
+  </div>
 
   <!-- Compare -->
   {#if compareDisplay.length > 0}
     <section class="mt-10 border-t border-paper-200 pt-8">
       <h2 class="font-serif text-lg font-bold text-ink-900">{m.browse_compare_heading({ count: compareResolved.length })}</h2>
-      <div class="compare-grid mt-4 grid grid-cols-1 gap-4" style="--cmp-cols: {Math.min(4, compareDisplay.length)};">
+      <div class="compare-grid mt-4 grid grid-cols-1 gap-4">
         {#each compareDisplay as entry}
           {@const entryName = entry.national ? m.browse_national_label() : entry.kind === "state" ? entry.row.stateName : entry.row.name}
           <div class="relative rounded-lg border p-4" style="border-color: {entry.national ? 'var(--color-ink-500)' : 'var(--color-paper-200)'}; background: var(--color-paper-50);">
@@ -516,9 +519,12 @@
 </main>
 
 <style>
+  .compare-grid {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
   @media (min-width: 640px) {
     .compare-grid {
-      grid-template-columns: repeat(var(--cmp-cols), minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
     }
   }
 </style>
