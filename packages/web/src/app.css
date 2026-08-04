@@ -77,9 +77,9 @@
        file is the authoritative source (also consumed by MapLibre paint
        expressions and Satori bake scripts, which can't read CSS custom
        properties), these three mirror it for Tailwind/CSS usage. */
-    --color-model-jail: #C8788D;
+    --color-model-jail: #C87899;
     --color-model-taskforce: #59A7E6;
-    --color-model-wso: #76A263;
+    --color-model-wso: #70A263;
     /* News reading text is set in a classic transitional serif (system-safe, no
        font load) — pairs with the Bitter slab headings for an editorial feel. */
     --font-news-serif: Georgia, "Times New Roman", serif;
@@ -307,8 +307,8 @@
   }
 
   /* Warm near-black, not white — white text on these three backgrounds
-     fails WCAG AA. This clears AA on all three of the current (lightened)
-     model colors: 5.97:1 (jail), 7.41:1 (taskforce), 6.52:1 (wso). Mirrors
+     fails WCAG AA. This clears AA on all three of the current MODEL_COLORS:
+     6.04:1 (jail), 7.41:1 (taskforce), 6.44:1 (wso). Mirrors
      MODEL_TEXT_COLORS in $lib/colors.ts — keep the two in sync. */
   .model-badge--jail {
     background: var(--color-model-jail);
