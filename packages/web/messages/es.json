@@ -1,8 +1,6 @@
 {
   "$schema": "https://inlang.com/schema/inlang-message-format",
   "skip_to_main": "Saltar al contenido principal",
-  "nav_map": "Nacional",
-  "nav_states": "Estados",
   "nav_glossary": "Glosario",
   "nav_about": "Acerca de",
   "nav_methodology": "Metodología",

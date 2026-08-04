@@ -372,7 +372,9 @@
         {m.footer_tagline_after_name()}
       </p>
       <p>
-        <a href={localizeHref("/")} class="text-ink-700 hover:text-ink-900">{m.nav_map()}</a>
+        <a href={localizeHref("/states")} class="text-ink-700 hover:text-ink-900">{m.nav_explore()}</a>
+        <span class="mx-1.5 text-ink-500">·</span>
+        <a href={localizeHref("/timeline")} class="text-ink-700 hover:text-ink-900">{m.nav_timeline()}</a>
         <span class="mx-1.5 text-ink-500">·</span>
         <a href={localizeHref("/glossary")} class="text-ink-700 hover:text-ink-900">{m.nav_glossary()}</a>
         <span class="mx-1.5 text-ink-500">·</span>
