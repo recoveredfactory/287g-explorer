@@ -328,6 +328,11 @@
               aria-current={isNavActive('/states', basePath) ? 'page' : undefined}
             >{m.nav_states()}</a>
             <a
+              href={localizeHref("/explore")}
+              class="no-underline {isNavActive('/explore', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
+              aria-current={isNavActive('/explore', basePath) ? 'page' : undefined}
+            >{m.nav_explore()}</a>
+            <a
               href={localizeHref("/glossary")}
               class="no-underline {isNavActive('/glossary', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
               aria-current={isNavActive('/glossary', basePath) ? 'page' : undefined}
