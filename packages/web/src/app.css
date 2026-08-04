@@ -35,33 +35,31 @@
   --text-body: 0.9375rem;
   --text-caption: 0.8125rem;
 
-  /* Warm "documentary editorial" neutral ramp — replaces the cool
-     Tailwind stone/slate defaults used ambiently across the site. Kept
-     deliberately low-saturation (paper-50 first shipped at 50% saturation and
-     read as outright yellow at 97% lightness — "cream stationery," not
-     "paper"; then went too subtle at 15% sat/98.5% lightness — read as
-     indistinguishable from plain white. Settled at 12% sat/99% lightness:
-     visibly not stark white, still reads as quiet/near-white rather than
-     tinted).
+  /* Cool neutral ramp — replaced the original warm "documentary editorial"
+     tan/beige ramp (paper-50 #fdfdfd/paper-100 #FAF9F7/paper-200 #F3F0EC,
+     ink-900 #241f16/ink-700 #4a4335/ink-500 #7a7160) after direct feedback
+     that the warm tone "wasn't working." Same lightness steps as the warm
+     ramp (so spacing/hierarchy is unchanged), hue rotated to ~213° (a calm
+     blue-gray) at a low, consistent saturation (~7–15%) rather than a warm
+     ~35–40° hue — genuinely neutral/cool, not just "less yellow." The three
+     model colors (rose/blue/green, lib/colors.ts) are unaffected — this is
+     the ambient/neutral palette only.
      Contrast checked against --color-paper-50 (WCAG AA, 4.5:1 normal text):
-     ink-900 16.1:1, ink-700 9.6:1 — safe for any text size, any paper-*
-     background. ink-500 is 4.74:1 on paper-50 and 4.58:1 on paper-100
-     (both pass, but tight) — restrict ink-500 to paper-50 backgrounds, or to
-     large text (≥18.66px bold / 24px) on paper-100. --color-paper-200 is a
+     ink-900 16.7:1, ink-700 10.5:1 — safe for any text size, any paper-*
+     background. ink-500 is 5.22:1 on paper-50, 5.00:1 on paper-100, 4.61:1
+     on paper-200 — all pass now (the warm ramp's ink-500 was borderline on
+     paper-100/200; this one clears with more room). --color-paper-200 is a
      *decorative* hairline only (well under the 3:1 non-text-contrast
      guidance for meaningful UI boundaries); functional element borders
      (inputs, buttons, card outlines that need to read as identifiable
      controls) should use ink-500 at reduced opacity instead, e.g.
-     color-mix(in srgb, var(--color-ink-500) 45%, transparent).
-     paper-100/200 lightened again (post-launch feedback: still read a touch
-     dark/beige on a phone) — same hue/saturation, lightness nudged up
-     (95.5%→97.5%, 89%→94%). */
-  --color-paper-50: #fdfdfd;
-  --color-paper-100: #FAF9F7;
-  --color-paper-200: #F3F0EC;
-  --color-ink-900: #241f16;
-  --color-ink-700: #4a4335;
-  --color-ink-500: #7a7160;
+     color-mix(in srgb, var(--color-ink-500) 45%, transparent). */
+  --color-paper-50: #FDFDFD;
+  --color-paper-100: #F8F8F9;
+  --color-paper-200: #EEEFF1;
+  --color-ink-900: #191D21;
+  --color-ink-700: #393F46;
+  --color-ink-500: #656C75;
 
   /* No separate "accent" hue site-wide, by design: highlight/link color
      defaults to deep ink (--color-ink-900/700) everywhere. The exception is
@@ -129,8 +127,8 @@
 
   a:focus-visible {
     @apply outline-none ring-2 ring-offset-2;
-    /* --color-ink-700 (#4a4335) on --color-paper-50 (#fbf8f3) checks ~7.3:1 —
-       comfortably clears WCAG AA for a focus indicator. */
+    /* --color-ink-700 on --color-paper-50 checks ~10.5:1 — comfortably
+       clears WCAG AA for a focus indicator. */
     --tw-ring-color: var(--color-ink-700);
   }
 

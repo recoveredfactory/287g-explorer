@@ -44,16 +44,17 @@
   const OLD_OPACITY = 0.65;
 
   // Dark theme (the expansion graphic, colorMode="newOld" — bake-only, kept
-  // exactly as published) vs. the default light "documentary editorial"
-  // theme matching NationalMap.svelte/AgencyMap.svelte's basemap palette, so
-  // these small-multiples on /states don't clash against their now-warm
-  // paper-toned card backgrounds (were cool slate/blue-gray, unchanged since
-  // before that palette existed).
-  $: landFill = dark ? "#182331" : "#f8f5ef";
-  $: landStroke = dark ? "#48607f" : "#7a7160";
-  $: hwStroke = dark ? "#354661" : "#a8916e";
-  $: oldDotStroke = dark ? "rgba(10,14,20,0.5)" : "#fdfdfd";
-  $: newDotStroke = dark ? "rgba(255,214,170,0.65)" : "#fdfdfd";
+  // exactly as published) vs. the default light theme, matching
+  // NationalMap.svelte/AgencyMap.svelte's cool-gray basemap palette. The
+  // light path is currently unused (the /states rebuild dropped this
+  // component's only light-mode consumer; /video/surge always passes
+  // dark) — kept in sync anyway rather than left stale, in case it's
+  // revived.
+  $: landFill = dark ? "#182331" : "#F8F8F9";
+  $: landStroke = dark ? "#48607f" : "#656C75";
+  $: hwStroke = dark ? "#354661" : "#7D8A99";
+  $: oldDotStroke = dark ? "rgba(10,14,20,0.5)" : "#FDFDFD";
+  $: newDotStroke = dark ? "rgba(255,214,170,0.65)" : "#FDFDFD";
 </script>
 
 <svg

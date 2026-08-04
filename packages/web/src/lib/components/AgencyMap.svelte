@@ -20,21 +20,21 @@
   // current state pops without dimming neighbors as harshly): stateBg here
   // recedes closer to the ocean tone, stateHighlight pops to near-white.
   const p = {
-    bg: "#F0ECE3",
-    stateBg: "#F5F1E8",
-    stateHighlight: "#fdfdfd",
-    stateLines: "#7a7160",
+    bg: "#E7E9EC",
+    stateBg: "#EDEEF0",
+    stateHighlight: "#FDFDFD",
+    stateLines: "#656C75",
     stateLineWidth: 0.7,
     stateHighlightBorder: "#BE6079",
     stateHighlightBorderWidth: 1.8,
-    county: "#E9E2D3",
-    roadCasing: "#fdfdfd",
-    roadFill: "#a8916e",
-    roadMedium: "#a8916e",
-    haloFill: "#fdfdfd",
+    county: "#DADEE2",
+    roadCasing: "#FDFDFD",
+    roadFill: "#7D8A99",
+    roadMedium: "#7D8A99",
+    haloFill: "#FDFDFD",
     dotStroke: "rgba(253,253,253,0.55)",
     dotStrokeWidth: 0.35,
-    text: "#4a4335",
+    text: "#393F46",
     textHalo: "rgba(253,253,253,0.9)",
   };
 

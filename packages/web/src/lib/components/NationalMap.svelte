@@ -115,27 +115,30 @@
   // "model" colorMode — colorMode="newOld" (the /video/surge bake-only
   // graphic) keeps its own separately-set dark fill/line further down,
   // deliberately: that's a distinct, already-published visual asset.
+  // Cool-gray basemap (matches app.css's ink/paper ramp — same hue family,
+  // ~213°, kept here as raw hex since MapLibre paint expressions can't read
+  // CSS custom properties). See app.css's @theme block for the rationale.
   const C = {
-    bg: "#F0ECE3",
-    state: "#FBF9F6",
-    line: "#7a7160",
+    bg: "#E7E9EC",
+    state: "#F8F8F9",
+    line: "#656C75",
     lineWidth: 0.7,
-    county: "#E9E2D3",
-    roadCasing: "#fdfdfd",
-    roadFill: "#a8916e",
-    roadMajorCasing: "#fdfdfd",
-    roadMajorFill: "#96805f",
-    roadMedium: "#a8916e",
+    county: "#DADEE2",
+    roadCasing: "#FDFDFD",
+    roadFill: "#7D8A99",
+    roadMajorCasing: "#FDFDFD",
+    roadMajorFill: "#6A798B",
+    roadMedium: "#7D8A99",
     dotStroke: "rgba(253,253,253,0.55)",
     dotStrokeWidth: 0.35,
-    text: "#4a4335",
+    text: "#393F46",
     textHalo: "rgba(253,253,253,0.9)",
     // Focus mode (focusSelected): the selected state's fill is lifted above the
     // base C.state and ringed with an accent border so it reads as the subject.
     // Rose accent matches the site's established general-notice/focus color
     // (homepage geo callout, states-index jump highlight, AgencyMap's own
     // state-highlight border below).
-    stateHighlight: "#fdfdfd",
+    stateHighlight: "#FDFDFD",
     highlightLine: "#BE6079",
     highlightLineWidth: 1.6,
   };

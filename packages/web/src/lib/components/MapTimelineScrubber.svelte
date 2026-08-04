@@ -162,7 +162,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #241f16;
+    background: var(--color-ink-900);
     cursor: pointer;
     border: 2px solid #ffffff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
@@ -171,7 +171,7 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #241f16;
+    background: var(--color-ink-900);
     cursor: pointer;
     border: 2px solid #ffffff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
