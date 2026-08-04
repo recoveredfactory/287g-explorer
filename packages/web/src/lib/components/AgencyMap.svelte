@@ -15,13 +15,17 @@
   const INSET_STATES = new Set(["AK", "HI", "PR", "VI", "GU", "MP", "AS"]);
 
   // Light "documentary editorial" basemap — matches NationalMap.svelte's
-  // palette (see that file for the fuller design rationale). The agency view
-  // has its own spec because it draws non-current states distinctly (so the
-  // current state pops without dimming neighbors as harshly): stateBg here
-  // recedes closer to the ocean tone, stateHighlight pops to near-white.
+  // palette (see that file for the fuller design rationale, including why bg
+  // is darkened well below the land fill rather than just a couple of
+  // points lighter). The agency view has its own spec because it draws
+  // non-current states distinctly (so the current state pops without
+  // dimming neighbors as harshly): stateBg here recedes toward the ocean
+  // tone (though not all the way — it should still read as "a US state, not
+  // focused" rather than "outside the country"), stateHighlight pops to
+  // near-white.
   const p = {
-    bg: "#E7E9EC",
-    stateBg: "#EDEEF0",
+    bg: "#BFC6CF",
+    stateBg: "#D4D8DD",
     stateHighlight: "#FDFDFD",
     stateLines: "#656C75",
     stateLineWidth: 0.7,

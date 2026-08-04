@@ -101,25 +101,29 @@
   // shape instead of clipping the edges agency points don't reach.
   let statesGeoJson: { features: any[] } | null = null;
 
-  // Light "documentary editorial" basemap — matches the site's warm paper/ink
-  // palette instead of the previous dark "steely analytical" scheme (#118,
-  // #148), which predated that palette and was never brought in line with it.
-  // Land is lifted lighter than the ocean/background so the country shape
-  // still separates clearly, same relationship the old dark scheme used
-  // (there: near-black sea, lighter slate land) just inverted in tone, not in
-  // structure. Model dot colors are unchanged (load-bearing, fixed) — contrast
-  // of the weakest (blue, ~2.9:1 against the land fill) is close to what it
-  // was against the old dark land fill (~4.4:1); a real-world light-basemap
-  // tradeoff, offset by each dot's own light stroke rim for separation rather
-  // than relying on fill contrast alone. NOTE: this only affects the default
-  // "model" colorMode — colorMode="newOld" (the /video/surge bake-only
-  // graphic) keeps its own separately-set dark fill/line further down,
-  // deliberately: that's a distinct, already-published visual asset.
-  // Cool-gray basemap (matches app.css's ink/paper ramp — same hue family,
+  // Light "documentary editorial" basemap — replaced the previous dark
+  // "steely analytical" scheme (#118, #148). Land is lifted lighter than the
+  // ocean/background so the country shape separates clearly, same
+  // relationship the old dark scheme used (there: near-black sea, lighter
+  // slate land) just inverted in tone, not in structure. Model dot colors
+  // are unchanged (load-bearing, fixed) — contrast of the weakest (blue,
+  // ~2.9:1 against the land fill) is close to what it was against the old
+  // dark land fill (~4.4:1); a real-world light-basemap tradeoff, offset by
+  // each dot's own light stroke rim for separation rather than relying on
+  // fill contrast alone. NOTE: this only affects the default "model"
+  // colorMode — colorMode="newOld" (the /video/surge bake-only graphic)
+  // keeps its own separately-set dark fill/line further down, deliberately:
+  // that's a distinct, already-published visual asset.
+  // Cool-gray palette (matches app.css's ink/paper ramp — same hue family,
   // ~213°, kept here as raw hex since MapLibre paint expressions can't read
-  // CSS custom properties). See app.css's @theme block for the rationale.
+  // CSS custom properties; see app.css's @theme block for the rationale).
+  // bg is darkened well below the land fill (not just a couple of points
+  // lighter) — this map has no other-country geometry at all (the "states"
+  // source is a custom US-only inset), so bg is the only thing separating
+  // "USA" from "not USA"; it needs to read as a clearly different tone at a
+  // glance, not just a subtle shade.
   const C = {
-    bg: "#E7E9EC",
+    bg: "#BFC6CF",
     state: "#F8F8F9",
     line: "#656C75",
     lineWidth: 0.7,
