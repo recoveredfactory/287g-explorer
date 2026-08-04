@@ -121,7 +121,7 @@
     // so link the name in both the "has agreements" and the "none" callout. (meta
     // exists only for the 50 states + DC, so detectedState here is always navigable.)
     const stateHref = localizeHref(`/state/${detectedState.toLowerCase()}`);
-    const linkedState = `<a href="${stateHref}" class="font-bold underline underline-offset-2 decoration-[#BE6079] hover:text-slate-900">${stateName}</a>`;
+    const linkedState = `<a href="${stateHref}" class="font-bold underline underline-offset-2 decoration-[#BE6079] hover:text-ink-900">${stateName}</a>`;
     if (!statesWithAnyAgreement.has(detectedState)) {
       return m.home_hero_state_callout_none({ state: linkedState });
     }
@@ -289,12 +289,12 @@
 <main id="main-content">
 
   <!-- ── Hero ─────────────────────────────────────────────────────────────── -->
-  <section class="border-b border-slate-200 bg-white px-4 py-10 sm:px-6 sm:py-20">
+  <section class="border-b px-4 py-10 sm:px-6 sm:py-20" style="border-color: var(--color-paper-200); background: var(--color-paper-50);">
     <div class="mx-auto max-w-3xl">
-      <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 sm:text-sm">
+      <p class="text-xs font-semibold uppercase tracking-widest sm:text-sm" style="color: var(--color-ink-500);">
         {m.home_hero_eyebrow()}
       </p>
-      <h1 class="mt-2 text-2xl font-black leading-tight text-slate-900 sm:mt-3 sm:text-4xl lg:text-5xl">
+      <h1 class="mt-2 text-2xl font-black leading-tight sm:mt-3 sm:text-4xl lg:text-5xl" style="color: var(--color-ink-900);">
         {m.home_hero_headline_line1()}<br class="hidden sm:block" /> {m.home_hero_headline_line2()}
       </h1>
       <p class="prose-editorial mt-4 text-base sm:mt-6 sm:text-lg">
@@ -302,7 +302,7 @@
       </p>
 
       {#if userStateCallout}
-        <p class="mt-4 border-l-4 border-[#BE6079] bg-rose-50/40 px-4 py-3 text-base text-slate-700 sm:text-lg">
+        <p class="mt-4 border-l-4 border-[#BE6079] bg-rose-50/40 px-4 py-3 text-base sm:text-lg" style="color: var(--color-ink-700);">
           {@html userStateCallout}
         </p>
       {/if}
@@ -311,7 +311,7 @@
            shown on the map overlay, and the block read as plain/redundant.
            The snapshot date survives as the page's data-freshness signal. -->
       {#if data.snapshotDate}
-        <p class="mt-4 text-xs italic text-slate-400 sm:mt-6">
+        <p class="mt-4 text-xs italic sm:mt-6" style="color: var(--color-ink-500);">
           As of {new Intl.DateTimeFormat("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(data.snapshotDate))}
         </p>
       {/if}
@@ -319,17 +319,17 @@
   </section>
 
   <!-- ── Map ──────────────────────────────────────────────────────────────── -->
-  <section class="border-b border-slate-200 bg-stone-50 pt-8 sm:pt-10">
+  <section class="border-b pt-8 sm:pt-10" style="border-color: var(--color-paper-200); background: var(--color-paper-100);">
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
         <div>
-          <h2 class="font-serif text-xl font-bold text-slate-900 sm:text-2xl">
+          <h2 class="font-serif text-xl font-bold sm:text-2xl" style="color: var(--color-ink-900);">
             {m.home_map_heading()}
           </h2>
-          <p class="mt-1 text-xs text-slate-500 sm:text-sm">
+          <p class="mt-1 text-xs sm:text-sm" style="color: var(--color-ink-500);">
             {m.home_map_subhead()}
           </p>
-          <p class="mt-1 text-xs text-slate-500 sm:text-sm">
+          <p class="mt-1 text-xs sm:text-sm" style="color: var(--color-ink-500);">
             {m.home_map_size_note()}
           </p>
         </div>
@@ -337,7 +337,7 @@
         <div class="flex flex-col items-start gap-2 sm:items-end">
           <div class="flex flex-wrap items-center gap-x-4 gap-y-2 sm:gap-x-6">
             {#each MODEL_ORDER as full}
-              <span class="flex items-center gap-1.5 text-xs text-slate-600 sm:text-sm">
+              <span class="flex items-center gap-1.5 text-xs sm:text-sm" style="color: var(--color-ink-700);">
                 <span
                   class="inline-block h-2.5 w-2.5 rounded-full border border-white shadow-sm sm:h-3 sm:w-3"
                   style="background: {MODEL_COLORS[full]};"
@@ -346,17 +346,19 @@
               </span>
             {/each}
           </div>
-          <div class="flex items-center gap-3 text-xs text-slate-600 sm:text-sm">
+          <div class="flex items-center gap-3 text-xs sm:text-sm" style="color: var(--color-ink-700);">
             <span class="flex items-center gap-1.5">
               <span
-                class="inline-block h-[6px] w-[6px] rounded-full border border-white bg-slate-400 shadow-sm"
+                class="inline-block h-[6px] w-[6px] rounded-full border border-white shadow-sm"
+                style="background: var(--color-ink-500);"
                 aria-hidden="true"
               ></span>
               10
             </span>
             <span class="flex items-center gap-1.5">
               <span
-                class="inline-block h-[20px] w-[20px] rounded-full border border-white bg-slate-400 shadow-sm"
+                class="inline-block h-[20px] w-[20px] rounded-full border border-white shadow-sm"
+                style="background: var(--color-ink-500);"
                 aria-hidden="true"
               ></span>
               1,000+ {m.home_map_size_legend_label()}
@@ -366,22 +368,23 @@
       </div>
 
       {#if detectedState && STATE_NAMES[detectedState] && data.stateMeta[detectedState]?.participating > 0 && !(selectedStates.size === 1 && selectedStates.has(detectedState))}
-        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs" style="color: var(--color-ink-500);">
           <button
             type="button"
             on:click={() => (selectedStates = new Set([detectedState!]))}
-            class="text-xs text-slate-500 underline-offset-2 hover:text-slate-900 hover:underline"
+            class="text-xs underline-offset-2 hover:underline"
+            style="color: var(--color-ink-500);"
           >Zoom to {STATE_NAMES[detectedState]} →</button>
         </div>
       {/if}
     </div>
 
     <!-- Map: full-bleed so the country breaks the column and reads at scale -->
-    <div class="relative mt-4 h-[360px] overflow-hidden border-y border-slate-200 shadow-sm sm:h-[560px] lg:h-[680px]">
+    <div class="relative mt-4 h-[360px] overflow-hidden border-y shadow-sm sm:h-[560px] lg:h-[680px]" style="border-color: var(--color-paper-200);">
       {#if data.agencies.length === 0}
-        <div class="flex h-full items-center justify-center bg-slate-100 text-slate-500">
+        <div class="flex h-full items-center justify-center" style="background: var(--color-paper-200); color: var(--color-ink-500);">
           <div class="px-6 text-center">
-            <p class="font-medium text-slate-700">{m.home_map_empty_title()}</p>
+            <p class="font-medium" style="color: var(--color-ink-700);">{m.home_map_empty_title()}</p>
             <p class="mt-1 text-sm">{m.home_map_empty_subtitle()}</p>
           </div>
         </div>
@@ -419,10 +422,10 @@
       {/if}
     </div>
     {#if data.agencies.length > 0 && Number.isFinite(maxIdx)}
-      <div class="bg-white">
+      <div style="background: var(--color-paper-50);">
         <div class="mx-auto max-w-6xl">
           <MapTimelineScrubber bind:this={scrubberRef} {minIdx} {maxIdx} labelMaxIdx={todayIdx} bind:cursorIdx bind:playing={timelinePlaying} {countAtCursor} />
-          <div class="px-4 pb-4 text-[11px] italic leading-snug text-slate-500 sm:px-6 sm:text-xs">
+          <div class="px-4 pb-4 text-[11px] italic leading-snug sm:px-6 sm:text-xs" style="color: var(--color-ink-500);">
             {#if statewideCount > 0}
               <p>{m.home_map_statewide_note({ count: statewideCount })}</p>
             {/if}
@@ -432,7 +435,8 @@
                 href="https://github.com/appelson/Tracking_287g"
                 target="_blank"
                 rel="noreferrer"
-                class="underline hover:text-slate-900"
+                class="underline"
+                style="color: var(--color-ink-500);"
               >{m.home_map_download()} ↗</a>
             </p>
           </div>
@@ -440,18 +444,19 @@
       </div>
     {/if}
     <!-- Below the map: free download / licensing page (not in nav) -->
-    <div class="border-t border-slate-200 bg-stone-50 px-4 py-3 text-center sm:px-6">
+    <div class="border-t px-4 py-3 text-center sm:px-6" style="border-color: var(--color-paper-200); background: var(--color-paper-100);">
       <a
         href={localizeHref("/use-the-map")}
-        class="text-sm font-semibold text-slate-700 underline-offset-2 hover:text-slate-900 hover:underline"
+        class="text-sm font-semibold underline-offset-2 hover:underline"
+        style="color: var(--color-ink-700);"
       >{m.home_map_use_cta()}</a>
     </div>
   </section>
 
   <!-- ── What each model authorizes ───────────────────────────────────────── -->
-  <section class="border-b border-slate-200 bg-white px-4 py-10 sm:px-6 sm:py-12">
+  <section class="border-b px-4 py-10 sm:px-6 sm:py-12" style="border-color: var(--color-paper-200); background: var(--color-paper-50);">
     <div class="mx-auto max-w-6xl">
-      <h2 class="font-serif text-xl font-bold text-slate-900 sm:text-2xl">
+      <h2 class="font-serif text-xl font-bold sm:text-2xl" style="color: var(--color-ink-900);">
         {m.home_models_heading()}
       </h2>
       <div class="mt-5 grid items-stretch gap-4 sm:grid-cols-3">
@@ -469,7 +474,7 @@
               >{model.replace(/ Model$/, '')}</h3>
             </div>
             <div class="flex flex-1 flex-col gap-3 px-4 py-4" style="background: {MODEL_COLORS[model]}28;">
-              <p class="text-sm leading-relaxed text-slate-700">{@html desc.short}</p>
+              <p class="text-sm leading-relaxed" style="color: var(--color-ink-700);">{@html desc.short}</p>
               <div class="flex items-end justify-between gap-2">
                 <span
                   class="text-sm font-semibold group-hover:underline"
@@ -477,7 +482,8 @@
                 >Learn more →</span>
                 {#if data.modelCounts[model]}
                   <p
-                    class="text-right text-xs italic text-slate-500"
+                    class="text-right text-xs italic"
+                    style="color: var(--color-ink-500);"
                     title={data.snapshotDate ? `As of ${data.snapshotDate}` : undefined}
                   >{intFmt.format(data.modelCounts[model])} agencies</p>
                 {/if}
@@ -497,32 +503,34 @@
   <section class="px-4 py-10 sm:px-6 sm:py-12">
     <div class="mx-auto max-w-6xl">
 
-      <h2 class="font-serif text-xl font-bold text-slate-900 sm:text-2xl">{m.home_search_heading()}</h2>
+      <h2 class="font-serif text-xl font-bold sm:text-2xl" style="color: var(--color-ink-900);">{m.home_search_heading()}</h2>
 
       <!-- Filter controls — sticky once scrolled into view -->
       <div
         bind:clientHeight={filterBarHeight}
-        class="sticky z-40 -mx-4 border-b border-slate-200 bg-stone-50/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6"
-        style="top: calc(var(--site-header-height) + var(--staging-banner-height));"
+        class="sticky z-40 -mx-4 border-b px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6"
+        style="top: calc(var(--site-header-height) + var(--staging-banner-height)); border-color: var(--color-paper-200); background: color-mix(in srgb, var(--color-paper-50) 95%, transparent);"
       >
         <div class="space-y-3">
           <!-- Search input — full width on mobile -->
           <div class="relative">
-            <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style="color: var(--color-ink-500);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
             </svg>
             <input
               type="search"
               bind:value={searchQuery}
               placeholder={m.home_search_placeholder()}
-              class="w-full rounded-md border border-slate-300 bg-white py-2.5 pl-9 pr-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+              class="w-full rounded-md border py-2.5 pl-9 pr-3 text-base focus:outline-none focus:ring-1 sm:text-sm"
+              style="border-color: var(--color-paper-200); background: var(--color-paper-50); color: var(--color-ink-900);"
             />
           </div>
 
           <!-- State + model row — wraps cleanly on mobile -->
           <div class="flex flex-wrap items-center gap-2">
             <select
-              class="max-w-[11rem] rounded-md border border-slate-300 bg-white py-2 pl-3 pr-7 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:max-w-none"
+              class="max-w-[11rem] rounded-md border py-2 pl-3 pr-7 text-sm focus:outline-none focus:ring-1 sm:max-w-none"
+              style="border-color: var(--color-paper-200); background: var(--color-paper-50); color: var(--color-ink-700);"
               on:change={(e) => { if (e.currentTarget.value) { toggleState(e.currentTarget.value); e.currentTarget.value = ""; } }}
             >
               <option value="">{selectedStates.size === 0 ? m.home_search_all_states() : "Add state…"}</option>
@@ -536,7 +544,7 @@
                 type="button"
                 on:click={() => toggleState(state)}
                 class="flex items-center gap-1 rounded border px-3 py-1.5 text-xs font-semibold text-white"
-                style="background-color: #2c2c2c; border-color: #2c2c2c;"
+                style="background-color: var(--color-ink-900); border-color: var(--color-ink-900);"
               >
                 {STATE_NAMES[state] ?? state}
                 <span aria-hidden="true" class="opacity-70">×</span>
@@ -561,7 +569,7 @@
               <button
                 type="button"
                 on:click={() => toggleState(detectedState!)}
-                class="text-xs underline underline-offset-2" style="color: #23272b;"
+                class="text-xs underline underline-offset-2" style="color: var(--color-ink-900);"
               >
                 {m.home_search_use_detected_state({ state: STATE_NAMES[detectedState] ?? detectedState })}
               </button>
@@ -569,7 +577,8 @@
 
             <select
               bind:value={selectedYear}
-              class="rounded-md border border-slate-300 bg-white py-2 pl-3 pr-7 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              class="rounded-md border py-2 pl-3 pr-7 text-sm focus:outline-none focus:ring-1"
+              style="border-color: var(--color-paper-200); background: var(--color-paper-50); color: var(--color-ink-700);"
             >
               <option value="">{m.home_search_year_signed()}</option>
               {#each allYears as year}
@@ -596,7 +605,7 @@
 
       <!-- Result count — aria-live so a filter change (which re-renders this
            text without navigation) gets announced to screen reader users. -->
-      <p class="mt-4 text-sm text-slate-500" aria-live="polite">
+      <p class="mt-4 text-sm" style="color: var(--color-ink-500);" aria-live="polite">
         {#if hasActiveFilters}
           {m.home_search_match_count({
             matched: intFmt.format(filteredAgencies.length),
@@ -605,7 +614,7 @@
           <button
             type="button"
             on:click={clearFilters}
-            class="underline underline-offset-2" style="color: #23272b;"
+            class="underline underline-offset-2" style="color: var(--color-ink-900);"
           >{m.home_search_clear_filters()}</button>
         {:else}
           {m.home_search_baseline({
@@ -618,18 +627,18 @@
 
       <!-- Agency grid -->
       {#if filteredAgencies.length === 0}
-        <div class="mt-5 rounded-lg border border-slate-200 bg-white px-6 py-12 text-center">
-          <p class="font-medium text-slate-700">{m.home_search_no_match()}</p>
+        <div class="mt-5 rounded-lg border px-6 py-12 text-center" style="border-color: var(--color-paper-200); background: var(--color-paper-50);">
+          <p class="font-medium" style="color: var(--color-ink-700);">{m.home_search_no_match()}</p>
           <button
             type="button"
             on:click={clearFilters}
-            class="mt-2 text-sm underline underline-offset-2" style="color: #23272b;"
+            class="mt-2 text-sm underline underline-offset-2" style="color: var(--color-ink-900);"
           >
             {m.home_search_clear_filters()}
           </button>
         </div>
       {:else}
-        <div class="agency-list mt-4 rounded-lg border border-slate-200 overflow-hidden text-sm">
+        <div class="agency-list mt-4 rounded-lg border overflow-hidden text-sm" style="border-color: var(--color-paper-200);">
           <ResponsiveDataTable
             items={filteredAgencies}
             getKey={(agency) => agency.slug}
@@ -638,7 +647,7 @@
             listStyle="height: calc(100vh - 400px); scrollbar-gutter: stable;"
           >
             {#snippet header()}
-              <div class="agency-row agency-row--header border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-wider text-slate-700">
+              <div class="agency-row agency-row--header border-b text-xs font-bold uppercase tracking-wider" style="border-color: var(--color-paper-200); background: var(--color-paper-100); color: var(--color-ink-700);">
                 <div class="px-3 py-2 sm:px-4 sm:py-3" role="columnheader">Agency</div>
                 <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">Type</div>
                 <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">Signed</div>
@@ -692,13 +701,14 @@
                   </div>
                 </div>
               {:else}
-                <div class="agency-row border-b border-slate-100 hover:bg-slate-50">
+                <div class="agency-row border-b agency-row--hoverable" style="border-color: var(--color-paper-100);">
                   <div class="px-3 py-2 sm:px-4 sm:py-3" role="cell">
                     <a
                       href={localizeHref(`/agency/${agency.slug}`)}
-                      class="font-semibold leading-snug text-slate-900 no-underline hover:underline"
+                      class="font-semibold leading-snug no-underline hover:underline"
+                      style="color: var(--color-ink-900);"
                     >{agency.name}</a>
-                    <p class="text-xs text-slate-600">
+                    <p class="text-xs" style="color: var(--color-ink-700);">
                       {#if agency.city}{agency.city}{/if}{#if agency.city && agency.state}, {/if}{#if agency.state}<a
                         href={localizeHref(`/state/${agency.state.toLowerCase()}`)}
                         class="no-underline hover:underline"
@@ -718,17 +728,17 @@
                       {/each}
                     </div>
                   </div>
-                  <div class="px-2 py-2 tabular-nums text-slate-600 sm:px-3 sm:py-3" role="cell">
+                  <div class="px-2 py-2 tabular-nums sm:px-3 sm:py-3" style="color: var(--color-ink-700);" role="cell">
                     {agency.signed_date ? agency.signed_date.slice(0, 4) : "—"}
                   </div>
-                  <div class="agency-col-pop px-2 py-2 tabular-nums text-slate-600 sm:px-3 sm:py-3" role="cell">
+                  <div class="agency-col-pop px-2 py-2 tabular-nums sm:px-3 sm:py-3" style="color: var(--color-ink-700);" role="cell">
                     {agency.population ? popFmt.format(agency.population) : "—"}
                   </div>
                   <div class="px-2 py-2 text-xs font-semibold sm:px-3 sm:py-3" role="cell">
                     {#if agency.moa_url}
                       <a href={agency.moa_url} target="_blank" rel="noreferrer" class="no-underline hover:underline">↗</a>
                     {:else}
-                      <span class="text-slate-300">—</span>
+                      <span style="color: var(--color-paper-200);">—</span>
                     {/if}
                   </div>
                   <div class="agency-col-foia px-2 py-2 text-xs font-semibold sm:px-3 sm:py-3" role="cell">
@@ -771,8 +781,8 @@
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     box-shadow:
-      0 1px 3px rgba(15, 23, 42, 0.08),
-      0 8px 22px rgba(15, 23, 42, 0.10);
+      0 1px 3px rgba(36, 31, 22, 0.08),
+      0 8px 22px rgba(36, 31, 22, 0.10);
     transition: background-color 180ms ease-out, transform 180ms ease-out;
   }
   @media (min-width: 640px) {
@@ -785,7 +795,7 @@
     transform: scale(0.98);
   }
   button.count-card:focus-visible {
-    outline: 2px solid rgba(15, 23, 42, 0.4);
+    outline: 2px solid rgba(36, 31, 22, 0.4);
     outline-offset: 2px;
   }
   .count-date {
@@ -820,7 +830,7 @@
   }
   .count-divider {
     width: 1px;
-    background: rgba(15, 23, 42, 0.12);
+    background: rgba(36, 31, 22, 0.12);
     align-self: stretch;
   }
   .count-number {
@@ -829,7 +839,7 @@
     font-weight: 800;
     font-size: 1.35rem;
     line-height: 1;
-    color: #0f172a;
+    color: var(--color-ink-900);
     letter-spacing: -0.02em;
   }
   @media (min-width: 640px) {
@@ -841,7 +851,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.14em;
-    color: #64748b;
+    color: var(--color-ink-500);
     text-align: center;
     white-space: nowrap;
   }
@@ -870,6 +880,9 @@
   .agency-row--header {
     overflow-y: auto;
     scrollbar-gutter: stable;
+  }
+  .agency-row--hoverable:hover {
+    background: var(--color-paper-100);
   }
   /* svelte-virtuallists' inner track. Full width so each grid row spans the
      viewport and its columns line up with the header. (The viewport — .vtlist —
