@@ -102,6 +102,25 @@
   // search first, then the matching results (and their checkboxes) appear.
   $: dropdownOpen = query.trim().length > 0;
 
+  // Sort control for the search dropdown — a small icon-triggered popover,
+  // not a persistent control row (mobile-first: nothing extra competing for
+  // space next to the search box). Shares one key across both states and
+  // agencies since "rank"/"name"/"population" mean the same thing for both.
+  type SortKey = "rank" | "name" | "population";
+  let sortKey: SortKey = "rank";
+  let sortMenuOpen = false;
+
+  function stateComparator(key: SortKey) {
+    if (key === "name") return (a: StateRow, b: StateRow) => a.stateName.localeCompare(b.stateName);
+    if (key === "population") return (a: StateRow, b: StateRow) => (b.populationServed ?? 0) - (a.populationServed ?? 0);
+    return (a: StateRow, b: StateRow) => b.agencyCount - a.agencyCount;
+  }
+  function agencyComparator(key: SortKey) {
+    if (key === "name") return (a: AgencyRow, b: AgencyRow) => a.name.localeCompare(b.name);
+    if (key === "population") return (a: AgencyRow, b: AgencyRow) => (b.population ?? 0) - (a.population ?? 0);
+    return (a: AgencyRow, b: AgencyRow) => (b.officerCt ?? 0) - (a.officerCt ?? 0);
+  }
+
   const DISPLAY_CAP = 150;
 
   $: if (browser && !mounted) mounted = true;
@@ -141,12 +160,25 @@
   // substring match against a short query matched almost every state
   // (e.g. "t" ⊂ "TX", "UT", "MT", "CT"...) and the States group showed up
   // for nearly any agency search, not just actual state searches.
-  $: filteredStates = data.states.filter((s) => !q || s.stateName.toLowerCase().includes(q) || s.abbr.toLowerCase() === q);
-  $: filteredAgenciesAll = data.agencies.filter((a) =>
-    !q || a.name.toLowerCase().includes(q) || a.state.toLowerCase().includes(q),
-  );
+  $: filteredStates = data.states
+    .filter((s) => !q || s.stateName.toLowerCase().includes(q) || s.abbr.toLowerCase() === q)
+    .slice()
+    .sort(stateComparator(sortKey));
+  $: filteredAgenciesAll = data.agencies
+    .filter((a) => !q || a.name.toLowerCase().includes(q) || a.state.toLowerCase().includes(q))
+    .slice()
+    .sort(agencyComparator(sortKey));
   $: agenciesTotal = filteredAgenciesAll.length;
   $: filteredAgencies = filteredAgenciesAll.slice(0, DISPLAY_CAP);
+
+  // Quick-pick presets — one tap fills the compare tray instead of requiring
+  // you to already know who you want to compare.
+  function presetTopStates() {
+    selection = topStates.slice(0, 3).map((s) => ({ kind: "state" as const, id: s.abbr }));
+  }
+  function presetTopAgencies() {
+    selection = topAgencies.slice(0, 3).map((a) => ({ kind: "agency" as const, id: a.slug }));
+  }
 
   type CompareEntry =
     | { kind: "state"; row: StateRow; national: boolean }
@@ -200,10 +232,14 @@
 
   function onOutsidePointer(e: PointerEvent) {
     if (!(e.target as HTMLElement).closest(".browse-search")) dropdownOpen = false;
+    if (!(e.target as HTMLElement).closest(".browse-sort")) sortMenuOpen = false;
   }
 
   function onWindowKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") dropdownOpen = false;
+    if (e.key === "Escape") {
+      dropdownOpen = false;
+      sortMenuOpen = false;
+    }
   }
 </script>
 
@@ -256,7 +292,8 @@
   <!-- Search + grouped inline checklist dropdown — one box searches both
        states and agencies at once (no States/Agencies mode switch: the
        compare tray already mixes both, so browsing shouldn't be split). -->
-  <div class="browse-search relative mt-6 max-w-sm">
+  <div class="mt-6 flex items-start gap-2">
+  <div class="browse-search relative max-w-sm flex-1">
     <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
     </svg>
@@ -359,6 +396,47 @@
         {/if}
       </div>
     {/if}
+  </div>
+
+  <!-- Sort control — icon button + small popover, not a persistent row next
+       to search (mobile-first: nothing extra competing for space there). -->
+  <div class="browse-sort relative shrink-0">
+    <button
+      type="button"
+      on:click={() => (sortMenuOpen = !sortMenuOpen)}
+      aria-expanded={sortMenuOpen}
+      aria-label={m.browse_sort_label()}
+      class="flex h-[2.375rem] w-[2.375rem] items-center justify-center rounded-md border border-paper-200 bg-paper-50 text-ink-700 hover:border-ink-500 hover:text-ink-900"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 7h18M6 12h12M10 17h4" />
+      </svg>
+    </button>
+    {#if sortMenuOpen}
+      <div class="absolute right-0 top-full z-20 mt-1.5 w-40 overflow-hidden rounded-md border border-paper-200 bg-paper-50 shadow-lg">
+        {#each [["rank", m.browse_sort_size()], ["name", m.browse_sort_name()], ["population", m.browse_sort_population_opt()]] as [key, label]}
+          <button
+            type="button"
+            on:click={() => { sortKey = key as SortKey; sortMenuOpen = false; }}
+            class="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-paper-100"
+            class:font-semibold={sortKey === key}
+            class:text-ink-900={sortKey === key}
+            class:text-ink-700={sortKey !== key}
+          >
+            {label}
+            {#if sortKey === key}<span aria-hidden="true">✓</span>{/if}
+          </button>
+        {/each}
+      </div>
+    {/if}
+  </div>
+  </div>
+
+  <!-- Quick-pick presets — one tap fills the compare tray instead of
+       requiring you to already know who you want to compare. -->
+  <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+    <button type="button" on:click={presetTopStates} class="font-semibold text-ink-700 underline underline-offset-2 hover:text-ink-900">{m.browse_preset_top_states()}</button>
+    <button type="button" on:click={presetTopAgencies} class="font-semibold text-ink-700 underline underline-offset-2 hover:text-ink-900">{m.browse_preset_top_agencies()}</button>
   </div>
 
   <!-- Selection bar -->
