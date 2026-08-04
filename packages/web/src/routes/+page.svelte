@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PageData } from "./$types";
-  import { MODEL_COLORS, MODEL_TEXT_COLORS, MODEL_DARK_COLORS, MODEL_SHORT, MODEL_MINI, MODEL_SLUG, MODEL_ORDER } from "$lib/colors";
-  import { STATE_NAMES, NAVIGABLE_STATES } from "$lib/states";
+  import { MODEL_COLORS, MODEL_TEXT_COLORS, MODEL_DARK_COLORS, MODEL_MINI, MODEL_SLUG, MODEL_ORDER } from "$lib/colors";
+  import { STATE_NAMES } from "$lib/states";
   import NationalMap from "$lib/components/NationalMap.svelte";
   import MapTimelineScrubber from "$lib/components/MapTimelineScrubber.svelte";
   import TrendCharts from "$lib/components/TrendCharts.svelte";
@@ -16,7 +16,6 @@
   import Gloss from "$lib/components/Gloss.svelte";
   import { ogImage } from "$lib/ogImage";
   import { getCachedGeo } from "$lib/geo";
-  import ResponsiveDataTable from "$lib/components/ResponsiveDataTable.svelte";
 
   export let data: PageData;
 
@@ -83,21 +82,14 @@
     getLocale() === "es" ? "es-MX" : "en-US",
   );
 
-  // ── Search + filter ────────────────────────────────────────────────────────
-  let searchQuery = "";
-  let activeModels: Set<string> = new Set();
+  // Highlighted/zoomed state on the map — set by the geo "Zoom to my state"
+  // button or a shared ?states= link. No longer paired with a browse/filter
+  // UI (that's /states now); this is purely the map's own state.
   let selectedStates: Set<string> = new Set();
-  let selectedYear = "";
-  let filterBarHeight = 0;
-  $: thTop = `calc(var(--site-header-height) + var(--staging-banner-height) + ${filterBarHeight}px)`;
 
   const ALL_MODELS = MODEL_ORDER;
 
   // ── URL state persistence ──────────────────────────────────────────────────
-  const SLUG_TO_MODEL = Object.fromEntries(
-    Object.entries(MODEL_SLUG).map(([full, slug]) => [slug, full])
-  );
-
   let urlSyncTimer: ReturnType<typeof setTimeout>;
   let mounted = false;
   let detectedState: string | null = null;
@@ -186,11 +178,7 @@
     clearTimeout(urlSyncTimer);
     urlSyncTimer = setTimeout(() => {
       const params = new URLSearchParams();
-      if (searchQuery.trim()) params.set("q", searchQuery.trim());
       if (selectedStates.size > 0) params.set("states", [...selectedStates].join(","));
-      if (selectedYear) params.set("year", selectedYear);
-      if (activeModels.size > 0)
-        params.set("models", [...activeModels].map((m) => MODEL_SLUG[m]).filter(Boolean).join(","));
       const qs = params.toString();
       history.replaceState(history.state, "", qs ? `?${qs}` : location.pathname);
     }, 300);
@@ -198,28 +186,21 @@
 
   // Only sync URL for user-initiated changes after mount. Initial-state setup
   // (URL params, geo default) runs inside onMount and intentionally skips sync.
-  $: { searchQuery; selectedStates; selectedYear; activeModels;
+  $: { selectedStates;
     if (mounted) scheduleUrlSync();
   }
 
   onMount(async () => {
     const params = new URLSearchParams(location.search);
-    const q = params.get("q");
-    const models = params.get("models");
-    if (q) searchQuery = q;
     // Support both ?states=TX,FL (new) and legacy ?state=TX
     const statesParam = params.get("states") ?? params.get("state");
     if (statesParam) selectedStates = new Set(statesParam.split(",").filter(Boolean));
-    const year = params.get("year");
-    if (year) selectedYear = year;
-    if (models)
-      activeModels = new Set(models.split(",").map((s) => SLUG_TO_MODEL[s]).filter(Boolean));
 
     // Geo: detect the user's state for the hero callout (incl. the "no 287(g)
-    // here" message for states with zero agreements) and the filter button.
-    // Gate on a valid state code, NOT on allStates — allStates only contains
-    // states that *have* agencies, so gating on it suppressed the no-287(g)
-    // callout for the very states it's meant for (e.g. IL). See #138.
+    // here" message for states with zero agreements) and the map's zoom
+    // button. Gate on a valid state code, not on which states have agencies —
+    // that would suppress the no-287(g) callout for the very states it's
+    // meant for (e.g. IL). See #138.
     const geo = await getCachedGeo();
     if (geo.state && STATE_NAMES[geo.state]) {
       detectedState = geo.state;
@@ -233,57 +214,15 @@
     (window as any).__getTimelineBounds = () => ({ minIdx, maxIdx, todayIdx });
   });
 
-  $: allStates = [...new Set(data.agencies.map((a) => a.state).filter(Boolean))].sort();
-  $: allYears = [...new Set(data.agencies.map((a) => a.signed_date?.slice(0, 4)).filter(Boolean))].sort();
-
-  $: filteredAgencies = data.agencies.filter((a) => {
-    const q = searchQuery.trim().toLowerCase();
-    const matchesSearch =
-      !q ||
-      a.name.toLowerCase().includes(q) ||
-      a.state.toLowerCase().includes(q) ||
-      (a.city ?? "").toLowerCase().includes(q) ||
-      (a.county ?? "").toLowerCase().includes(q);
-    const matchesModel =
-      activeModels.size === 0 || a.models.some((m) => activeModels.has(m));
-    const matchesState = selectedStates.size === 0 || selectedStates.has(a.state);
-    const matchesYear = !selectedYear || a.signed_date?.startsWith(selectedYear);
-    return matchesSearch && matchesModel && matchesState && matchesYear;
-  });
-
-  const toggleState = (state: string) => {
-    const next = new Set(selectedStates);
-    if (next.has(state)) next.delete(state);
-    else next.add(state);
-    selectedStates = next;
-  };
-
-  const toggleModel = (model: string) => {
-    const next = new Set(activeModels);
-    if (next.has(model)) next.delete(model);
-    else next.add(model);
-    activeModels = next;
-  };
-
-  const clearFilters = () => {
-    searchQuery = "";
-    activeModels = new Set();
-    selectedStates = new Set();
-    selectedYear = "";
-  };
-
-  $: hasActiveFilters = searchQuery.trim() !== "" || activeModels.size > 0 || selectedStates.size > 0 || selectedYear !== "";
-
-  // Signature of the active filter set. The virtual list keeps its scroll
-  // position when `items` changes, so narrowing a filter would otherwise
-  // strand the reader mid-list. Keying the list on this string remounts it —
-  // and a fresh viewport renders from the top — whenever any filter changes.
-  $: filterKey = JSON.stringify([
-    searchQuery.trim().toLowerCase(),
-    [...selectedStates].sort(),
-    selectedYear,
-    [...activeModels].sort(),
-  ]);
+  // "Recently signed" preview — the most recently signed agreements, newest
+  // first, complementary to /states' rank-by-size lists (this one's ordered
+  // by time, not size). Links to /states for the full browse+compare tool
+  // instead of duplicating a full filterable grid here.
+  const RECENT_N = 8;
+  $: recentAgencies = [...data.agencies]
+    .filter((a) => a.signed_date)
+    .sort((a, b) => (b.signed_date ?? "").localeCompare(a.signed_date ?? ""))
+    .slice(0, RECENT_N);
 
   function modelDesc(model: string): { short: string; detail: string } {
     switch (model) {
@@ -578,256 +517,52 @@
   <TrendCharts agencies={data.agencies} trendMonths={data.trendMonths} trend={data.trend} />
 
 
-  <!-- ── Search + filter + browse ──────────────────────────────────────────── -->
+  <!-- ── Recently signed agreements ────────────────────────────────────────── -->
   <section class="px-4 py-16 sm:px-6 sm:py-20">
     <div class="mx-auto max-w-6xl">
-
-      <h2 class="font-serif text-[length:var(--text-h2)] font-bold" style="color: var(--color-ink-900);">{m.home_search_heading()}</h2>
-
-      <!-- Filter controls — sticky once scrolled into view -->
-      <div
-        bind:clientHeight={filterBarHeight}
-        class="sticky z-40 -mx-4 border-b px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6"
-        style="top: calc(var(--site-header-height) + var(--staging-banner-height)); border-color: var(--color-paper-200); background: color-mix(in srgb, var(--color-paper-50) 95%, transparent);"
-      >
-        <div class="space-y-3">
-          <!-- Search input — full width on mobile -->
-          <div class="relative">
-            <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style="color: var(--color-ink-500);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-            <input
-              type="search"
-              bind:value={searchQuery}
-              placeholder={m.home_search_placeholder()}
-              class="w-full rounded-md border py-2.5 pl-9 pr-3 text-base focus:outline-none focus:ring-1 sm:text-sm"
-              style="border-color: var(--color-paper-200); background: var(--color-paper-50); color: var(--color-ink-900);"
-            />
-          </div>
-
-          <!-- State + model row — wraps cleanly on mobile -->
-          <div class="flex flex-wrap items-center gap-2">
-            <select
-              class="max-w-[11rem] rounded-md border py-2 pl-3 pr-7 text-sm focus:outline-none focus:ring-1 sm:max-w-none"
-              style="border-color: var(--color-paper-200); background: var(--color-paper-50); color: var(--color-ink-700);"
-              on:change={(e) => { if (e.currentTarget.value) { toggleState(e.currentTarget.value); e.currentTarget.value = ""; } }}
-            >
-              <option value="">{selectedStates.size === 0 ? m.home_search_all_states() : "Add state…"}</option>
-              {#each allStates.filter(s => !selectedStates.has(s)) as state}
-                <option value={state}>{STATE_NAMES[state] ?? state}</option>
-              {/each}
-            </select>
-
-            {#each [...selectedStates].sort() as state}
-              <button
-                type="button"
-                on:click={() => toggleState(state)}
-                class="flex items-center gap-1 rounded border px-3 py-1.5 text-xs font-semibold text-white"
-                style="background-color: var(--color-ink-900); border-color: var(--color-ink-900);"
-              >
-                {STATE_NAMES[state] ?? state}
-                <span aria-hidden="true" class="opacity-70">×</span>
-              </button>
-            {/each}
-
-            <!-- Narrowed to one state → offer a jump to its full page (the select
-                 above only filters the map/list). Guarded to navigable states. -->
-            {#if selectedStates.size === 1 && NAVIGABLE_STATES[[...selectedStates][0]]}
-              {@const only = [...selectedStates][0]}
-              <a
-                href={localizeHref(`/state/${only.toLowerCase()}`)}
-                class="text-xs font-medium underline underline-offset-2"
-                style="color: #BE6079;"
-              >
-                {m.home_view_state_page({ state: STATE_NAMES[only] ?? only })}
-                <span aria-hidden="true">→</span>
-              </a>
-            {/if}
-
-            {#if detectedState && statesWithAnyAgreement.has(detectedState) && !selectedStates.has(detectedState)}
-              <button
-                type="button"
-                on:click={() => toggleState(detectedState!)}
-                class="text-xs underline underline-offset-2" style="color: var(--color-ink-900);"
-              >
-                {m.home_search_use_detected_state({ state: STATE_NAMES[detectedState] ?? detectedState })}
-              </button>
-            {/if}
-
-            <select
-              bind:value={selectedYear}
-              class="rounded-md border py-2 pl-3 pr-7 text-sm focus:outline-none focus:ring-1"
-              style="border-color: var(--color-paper-200); background: var(--color-paper-50); color: var(--color-ink-700);"
-            >
-              <option value="">{m.home_search_year_signed()}</option>
-              {#each allYears as year}
-                <option value={year}>{year}</option>
-              {/each}
-            </select>
-
-            {#each ALL_MODELS as model}
-              {@const active = activeModels.has(model)}
-              <button
-                type="button"
-                on:click={() => toggleModel(model)}
-                class="rounded border px-3 py-1.5 text-xs font-semibold transition-colors"
-                style={active
-                  ? `background: ${MODEL_COLORS[model]}; border-color: ${MODEL_COLORS[model]}; color: ${MODEL_TEXT_COLORS[model] ?? '#fff'};`
-                  : `background: ${MODEL_COLORS[model]}22; border-color: ${MODEL_COLORS[model]}88; color: ${MODEL_DARK_COLORS[model] ?? '#334155'};`}
-              >
-                {MODEL_SHORT[model]}
-              </button>
-            {/each}
-          </div>
-        </div>
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <h2 class="font-serif text-[length:var(--text-h2)] font-bold" style="color: var(--color-ink-900);">{m.home_recent_heading()}</h2>
+        <a
+          href={localizeHref("/states")}
+          class="text-sm font-semibold no-underline hover:underline"
+          style="color: var(--color-ink-900);"
+        >{m.home_recent_browse_all()} →</a>
       </div>
 
-      <!-- Result count — aria-live so a filter change (which re-renders this
-           text without navigation) gets announced to screen reader users. -->
-      <p class="mt-4 text-sm" style="color: var(--color-ink-500);" aria-live="polite">
-        {#if hasActiveFilters}
-          {m.home_search_match_count({
-            matched: intFmt.format(filteredAgencies.length),
-            total: intFmt.format(data.agencies.length),
-          })} —
-          <button
-            type="button"
-            on:click={clearFilters}
-            class="underline underline-offset-2" style="color: var(--color-ink-900);"
-          >{m.home_search_clear_filters()}</button>
-        {:else}
-          {m.home_search_baseline({
-            rows: intFmt.format(data.agencies.length),
-            agencies: intFmt.format(data.agencyCountUnique),
-            states: String(data.stateCount),
-          })}
-        {/if}
-      </p>
-
-      <!-- Agency grid -->
-      {#if filteredAgencies.length === 0}
-        <div class="mt-5 rounded-lg border px-6 py-12 text-center" style="border-color: var(--color-paper-200); background: var(--color-paper-50);">
-          <p class="font-medium" style="color: var(--color-ink-700);">{m.home_search_no_match()}</p>
-          <button
-            type="button"
-            on:click={clearFilters}
-            class="mt-2 text-sm underline underline-offset-2" style="color: var(--color-ink-900);"
-          >
-            {m.home_search_clear_filters()}
-          </button>
-        </div>
-      {:else}
-        <div class="agency-list mt-4 rounded-lg border overflow-hidden text-sm" style="border-color: var(--color-paper-200);">
-          <ResponsiveDataTable
-            items={filteredAgencies}
-            getKey={(agency) => agency.slug}
-            remountKey={filterKey}
-            ariaLabel={m.home_search_heading()}
-            listStyle="height: calc(100vh - 400px); scrollbar-gutter: stable;"
-          >
-            {#snippet header()}
-              <div class="agency-row agency-row--header border-b text-xs font-bold uppercase tracking-wider" style="border-color: var(--color-paper-200); background: var(--color-paper-100); color: var(--color-ink-700);">
-                <div class="px-3 py-2 sm:px-4 sm:py-3" role="columnheader">{m.state_th_agency()}</div>
-                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">{m.state_th_type()}</div>
-                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">{m.state_th_signed()}</div>
-                <div class="agency-col-pop px-2 py-2 sm:px-3 sm:py-3" role="columnheader">{m.state_th_population()}</div>
-                <div class="px-2 py-2 sm:px-3 sm:py-3" role="columnheader">{m.state_th_moa()}</div>
-                <div class="agency-col-foia px-2 py-2 sm:px-3 sm:py-3" role="columnheader">{m.home_th_foia()}</div>
+      {#if recentAgencies.length > 0}
+        <ul class="mt-6 divide-y overflow-hidden rounded-lg border" style="border-color: var(--color-paper-200);">
+          {#each recentAgencies as agency (agency.slug)}
+            <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5" style="border-color: var(--color-paper-100); background: var(--color-paper-50);">
+              <div class="min-w-0">
+                <a
+                  href={localizeHref(`/agency/${agency.slug}`)}
+                  class="font-semibold leading-snug no-underline hover:underline"
+                  style="color: var(--color-ink-900);"
+                >{agency.name}</a>
+                <p class="text-xs" style="color: var(--color-ink-500);">
+                  {#if agency.city}{agency.city}, {/if}<a
+                    href={localizeHref(`/state/${agency.state.toLowerCase()}`)}
+                    class="no-underline hover:underline"
+                  >{agency.state}</a>
+                </p>
               </div>
-            {/snippet}
-            {#snippet row(agency, isCard)}
-              {#if isCard}
-                <div class="agency-card border-b p-3" style="border-color: var(--color-paper-200);">
-                  <div role="cell">
-                    <a
-                      href={localizeHref(`/agency/${agency.slug}`)}
-                      class="font-semibold leading-snug no-underline hover:underline"
-                      style="color: var(--color-ink-900);"
-                    >{agency.name}</a>
-                    <p class="text-xs" style="color: var(--color-ink-500);">
-                      {#if agency.city}{agency.city}{/if}{#if agency.city && agency.state}, {/if}{#if agency.state}<a
-                        href={localizeHref(`/state/${agency.state.toLowerCase()}`)}
-                        class="no-underline hover:underline"
-                      >{agency.state}</a>{/if}
-                    </p>
-                  </div>
-                  <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs" style="color: var(--color-ink-700);">
-                    <div role="cell" class="flex flex-wrap gap-1">
-                      {#each agency.models as model}
-                        <span
-                          class="model-badge"
-                          class:model-badge--jail={model.includes("Jail")}
-                          class:model-badge--taskforce={model.includes("Task")}
-                          class:model-badge--wso={model.includes("Warrant")}
-                          title={model}
-                        >{MODEL_MINI[model] ?? model}</span>
-                      {/each}
-                    </div>
-                    <div role="cell">
-                      <span class="opacity-60">{m.state_th_signed()}</span>
-                      <span class="tabular-nums font-medium">{agency.signed_date ? agency.signed_date.slice(0, 4) : "—"}</span>
-                    </div>
-                    {#if agency.population}
-                      <div role="cell">
-                        <span class="opacity-60">{m.state_th_population()}</span>
-                        <span class="tabular-nums font-medium">{popFmt.format(agency.population)}</span>
-                      </div>
-                    {/if}
-                    {#if agency.moa_url}
-                      <a role="cell" href={agency.moa_url} target="_blank" rel="noreferrer" class="font-semibold no-underline hover:underline">{m.state_th_moa()} ↗</a>
-                    {/if}
-                    <a role="cell" href="https://www.muckrock.com/foi/create/" target="_blank" rel="noreferrer" class="font-semibold no-underline hover:underline">{m.home_th_foia()} →</a>
-                  </div>
+              <div class="flex shrink-0 items-center gap-3">
+                <div class="flex flex-wrap gap-1">
+                  {#each agency.models as model}
+                    <span
+                      class="model-badge"
+                      class:model-badge--jail={model.includes("Jail")}
+                      class:model-badge--taskforce={model.includes("Task")}
+                      class:model-badge--wso={model.includes("Warrant")}
+                      title={model}
+                    >{MODEL_MINI[model] ?? model}</span>
+                  {/each}
                 </div>
-              {:else}
-                <div class="agency-row border-b agency-row--hoverable" style="border-color: var(--color-paper-100);">
-                  <div class="px-3 py-2 sm:px-4 sm:py-3" role="cell">
-                    <a
-                      href={localizeHref(`/agency/${agency.slug}`)}
-                      class="font-semibold leading-snug no-underline hover:underline"
-                      style="color: var(--color-ink-900);"
-                    >{agency.name}</a>
-                    <p class="text-xs" style="color: var(--color-ink-700);">
-                      {#if agency.city}{agency.city}{/if}{#if agency.city && agency.state}, {/if}{#if agency.state}<a
-                        href={localizeHref(`/state/${agency.state.toLowerCase()}`)}
-                        class="no-underline hover:underline"
-                      >{agency.state}</a>{/if}
-                    </p>
-                  </div>
-                  <div class="px-2 py-2 sm:px-3 sm:py-3" role="cell">
-                    <div class="flex flex-wrap gap-1">
-                      {#each agency.models as model}
-                        <span
-                          class="model-badge"
-                          class:model-badge--jail={model.includes("Jail")}
-                          class:model-badge--taskforce={model.includes("Task")}
-                          class:model-badge--wso={model.includes("Warrant")}
-                          title={model}
-                        >{MODEL_MINI[model] ?? model}</span>
-                      {/each}
-                    </div>
-                  </div>
-                  <div class="px-2 py-2 tabular-nums sm:px-3 sm:py-3" style="color: var(--color-ink-700);" role="cell">
-                    {agency.signed_date ? agency.signed_date.slice(0, 4) : "—"}
-                  </div>
-                  <div class="agency-col-pop px-2 py-2 tabular-nums sm:px-3 sm:py-3" style="color: var(--color-ink-700);" role="cell">
-                    {agency.population ? popFmt.format(agency.population) : "—"}
-                  </div>
-                  <div class="px-2 py-2 text-xs font-semibold sm:px-3 sm:py-3" role="cell">
-                    {#if agency.moa_url}
-                      <a href={agency.moa_url} target="_blank" rel="noreferrer" class="no-underline hover:underline">↗</a>
-                    {:else}
-                      <span style="color: var(--color-paper-200);">—</span>
-                    {/if}
-                  </div>
-                  <div class="agency-col-foia px-2 py-2 text-xs font-semibold sm:px-3 sm:py-3" role="cell">
-                    <a href="https://www.muckrock.com/foi/create/" target="_blank" rel="noreferrer" class="no-underline hover:underline">→</a>
-                  </div>
-                </div>
-              {/if}
-            {/snippet}
-          </ResponsiveDataTable>
-        </div>
+                <span class="font-mono text-xs tabular-nums" style="color: var(--color-ink-500);">{agency.signed_date}</span>
+              </div>
+            </li>
+          {/each}
+        </ul>
       {/if}
 
     </div>
@@ -936,39 +671,5 @@
   }
   @media (min-width: 640px) {
     .count-label { font-size: 0.62rem; }
-  }
-
-  /* Agency virtual list grid — table mode only (ResponsiveDataTable renders
-     this below `isCard`, i.e. only at md:/768px and up), so it no longer
-     needs a narrower mobile column set or hidden columns; the mobile case is
-     the separate .agency-card layout below. Fixed column tracks (not `auto`)
-     so every row — header included — sizes its columns identically and they
-     line up into a real table. minmax(0, …) lets the name column shrink and
-     wrap instead of forcing the grid wider than its container. */
-  .agency-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 8.5rem 4rem 5.5rem 3.5rem 3.5rem;
-    align-items: center;
-  }
-  /* The virtualized rows live inside a scrolling viewport; on classic
-     (space-consuming) scrollbars that viewport is ~15px narrower than the
-     header, which would shift every column. Reserve the same gutter on the
-     header so the two grids share an identical content width and the columns
-     line up. `scrollbar-gutter` is a no-op with overlay scrollbars, so this
-     doesn't disturb platforms where they already align. */
-  .agency-row--header {
-    overflow-y: auto;
-    scrollbar-gutter: stable;
-  }
-  .agency-row--hoverable:hover {
-    background: var(--color-paper-100);
-  }
-  /* svelte-virtuallists' inner track. Full width so each grid row spans the
-     viewport and its columns line up with the header. (The viewport — .vtlist —
-     already gets overflow:auto from the lib; we add `scrollbar-gutter: stable`
-     via the component's style prop so its reserved gutter matches the header's
-     above and the columns don't shift.) */
-  :global(.vtlist-inner) {
-    width: 100%;
   }
 </style>
