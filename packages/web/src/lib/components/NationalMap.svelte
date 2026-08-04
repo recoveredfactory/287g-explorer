@@ -6,6 +6,8 @@
   import { toInsetCoords, INSET_TRANSFORMS } from "$lib/insetTransforms";
   import { STATE_NAMES } from "$lib/states";
   import { ensurePmtilesProtocol, pmtilesBaseSource, PMTILES_GLYPHS } from "$lib/map/pmtiles";
+  import { setupMapNavigation } from "$lib/map/touchPopup";
+  import { mediaQuery } from "$lib/reactiveMedia";
 
   export let selectedStates: Set<string> = new Set();
 
@@ -84,7 +86,14 @@
 
   let container: HTMLDivElement;
   let map: any = null;
-  const isMobile = browser && window.matchMedia("(max-width: 640px)").matches;
+  // Reactive (resize/orientation-aware) — replaces a one-time matchMedia
+  // check that used to freeze at whatever value was true at mount, leaving
+  // dot scale and fit padding stale after a device rotation.
+  const isMobileStore = mediaQuery("(max-width: 480px)");
+  $: isMobile = $isMobileStore;
+  // Snapshot at module init for the synchronous, pre-mount FIT_PADDING/bounds
+  // setup below (onMount's initial fit can't await a store subscription).
+  const isMobileInitial = browser && window.matchMedia("(max-width: 480px)").matches;
 
   // State polygons (inset coords), loaded once the "states" source is ready.
   // fitToSelection prefers these over agency points so a state with a sparse
@@ -137,7 +146,10 @@
   //   - Desktop reserves bottom space (bottom: 70) so AK's inset (which
   //     extends to ~18° below the bbox south of 21°) has room on wide
   //     aspect ratios where fitBounds otherwise pins 21° to the edge.
-  const FIT_PADDING: any = isMobile
+  // Uses the synchronous snapshot (isMobileInitial), not the reactive
+  // isMobile store — this const runs once at component init, before mount,
+  // so it can't depend on statement-ordering against a $: assignment.
+  const FIT_PADDING: any = isMobileInitial
     ? { top: 95, bottom: 8, left: 6, right: 6 }
     : { top: 14, bottom: 70, left: 14, right: 14 };
 
@@ -367,11 +379,33 @@
     "*", BASE_OPACITY, fadeMultiplier(cursor), fadeOutMultiplier(cursor),
   ];
 
+  // Dot radius scales by sqrt of the officer count so big departments read
+  // visibly heavier than rural sheriff's offices, without erasing the small
+  // ones. Mobile gets a tighter scale — reactive to isMobile (not a one-time
+  // check) so rotating a device or crossing the breakpoint after mount
+  // rescales the dots instead of leaving them frozen at the mount-time size.
+  // Domain ceiling = ~1,000 officers (between p99 and the dozen-or-so 1k+
+  // outliers like Las Vegas Metro) → sqrt ≈ 31.6.
+  $: SCALE = (isMobile ? 0.7 : 1) * dotScale;
+  const sizeExpr: any = ["sqrt", ["coalesce", ["get", "officer_ct"], 0]];
+  const sizeDomainMax = 32;
+  // dotBump is added at BOTH endpoints, so the linear interpolation lifts
+  // every dot by the same flat pixel amount regardless of officer count.
+  $: radiusFn = (low: number, high: number) => [
+    "interpolate", ["linear"], sizeExpr,
+    0, low * SCALE + dotBump,
+    sizeDomainMax, high * SCALE + dotBump,
+  ];
   // MapLibre rule: ["zoom"] can only appear as the direct input of a top-level
   // interpolate/step, never nested. So instead of wrapping the existing radius
   // expression in ["*", fade, ...], we keep `interpolate(linear, [zoom], ...)`
   // at the top and multiply fade INTO each per-zoom stop's output.
-  let radiusStops: Array<[number, any]> = [];
+  $: radiusStops = [
+    [3, radiusFn(0.8, 9)],
+    [6, radiusFn(2.4, 16)],
+    [10, radiusFn(5, 30)],
+    [13, radiusFn(8, 40)],
+  ] as Array<[number, any]>;
   const baseRadiusExpression = (): any => {
     if (!radiusStops.length) return 1;
     return ["interpolate", ["linear"], ["zoom"], ...radiusStops.flat()];
@@ -439,7 +473,11 @@
     return ["interpolate", ["linear"], ["zoom"], ...flat];
   };
 
-  $: if (map && map.getLayer && map.getLayer("agencies")) {
+  // `radiusStops` is read here (even though it's only used indirectly, via
+  // the functions below that close over it) purely so Svelte's dependency
+  // tracker re-runs this block when it changes — e.g. isMobile flipping
+  // after a device rotation — and pushes the new radius into the live map.
+  $: if (map && map.getLayer && map.getLayer("agencies") && radiusStops) {
     if (colorMode === "newOld") {
       map.setPaintProperty("agencies", "circle-opacity", ["*", newOldOpacityExpr(revealProgress), dimExpr]);
       map.setPaintProperty("agencies", "circle-stroke-opacity", newOldStrokeOpacityExpr(revealProgress));
@@ -814,29 +852,9 @@
         data: geojson,
       });
 
-      // Agency dots — on top of city labels. Radius scales by sqrt of the
-      // officer count so big departments read visibly heavier than rural
-      // sheriff's offices, without erasing the small ones. Mobile gets a
-      // tighter scale. Domain ceiling = ~1,000 officers (between p99 and the
-      // dozen-or-so 1k+ outliers like Las Vegas Metro) → sqrt ≈ 31.6.
-      const SCALE = (isMobile ? 0.7 : 1) * dotScale;
-      const sizeExpr: any = ["sqrt", ["coalesce", ["get", "officer_ct"], 0]];
-      const sizeDomainMax = 32;
-      // dotBump is added at BOTH endpoints, so the linear interpolation lifts
-      // every dot by the same flat pixel amount regardless of officer count.
-      const radius = (low: number, high: number) => [
-        "interpolate", ["linear"], sizeExpr,
-        0, low * SCALE + dotBump,
-        sizeDomainMax, high * SCALE + dotBump,
-      ];
-      // Captured so the timeline cursor's paint updates can rebuild the radius
-      // interpolation each frame with the fade multiplier applied per-stop.
-      radiusStops = [
-        [3, radius(0.8, 9)],
-        [6, radius(2.4, 16)],
-        [10, radius(5, 30)],
-        [13, radius(8, 40)],
-      ];
+      // Agency dot radius: radiusStops (reactive, computed at the top of this
+      // script from SCALE/dotScale/dotBump) is guaranteed set by the time this
+      // async "load" callback runs, since it's set up before component mount.
       const initialRadius =
         colorMode === "newOld"
           ? newOldRadiusExpr(revealProgress)
@@ -885,22 +903,10 @@
         },
       });
 
-      // Popup
-      const popup = new ml.Popup({
-        closeButton: false,
-        closeOnClick: false,
-        offset: 10,
-        className: "map-popup",
-      });
-
-      // Touch devices have no hover, so the existing mouseenter→click chain
-      // fires the popup and the navigation in the same gesture and the user
-      // never sees the tooltip. Gate hover handlers to real hover devices;
-      // touch uses a two-tap pattern: first tap shows the popup, second tap
-      // on the same dot (or on the popup itself) navigates.
-      const hasHoverPointer = window.matchMedia("(hover: hover)").matches;
-      let popupSlug: string | null = null;
-
+      // Popup + tap/hover navigation — shared with AgencyMap.svelte via
+      // $lib/map/touchPopup (see that module for the touch-interaction
+      // rationale: single-tap-to-navigate + long-press-for-info, replacing
+      // the old two-tap dance).
       const isFeatureVisible = (p: any): boolean => {
         if (cursorIdx == null) return true;
         const idx = Number(p.signed_idx);
@@ -922,66 +928,15 @@
           (modelBadges ? `<div class="popup-badges">${modelBadges}</div>` : "");
       };
 
-      const showPopupForFeature = (f: any) => {
-        const p = f.properties;
-        popup
-          .setLngLat(f.geometry.coordinates.slice())
-          .setHTML(buildPopupHtml(p))
-          .addTo(map);
-        popupSlug = p.slug;
-        if (!hasHoverPointer && p.slug) {
-          const el = popup.getElement();
-          if (el) {
-            el.style.cursor = "pointer";
-            el.addEventListener(
-              "click",
-              (ev) => { ev.stopPropagation(); goto(`/agency/${p.slug}`); },
-              { once: true },
-            );
-          }
-        }
-      };
-
-      const dismissPopup = () => {
-        popup.remove();
-        popupSlug = null;
-      };
-
-      map.on("mouseenter", "agencies", (e: any) => {
-        if (!hasHoverPointer) return;
-        if (!e.features?.length) return;
-        const f = e.features[0];
-        if (!isFeatureVisible(f.properties)) return;
-        map.getCanvas().style.cursor = "pointer";
-        showPopupForFeature(f);
-      });
-
-      map.on("mouseleave", "agencies", () => {
-        if (!hasHoverPointer) return;
-        map.getCanvas().style.cursor = "";
-        dismissPopup();
-      });
-
-      map.on("click", "agencies", (e: any) => {
-        if (!e.features?.length) return;
-        const f = e.features[0];
-        if (!isFeatureVisible(f.properties)) return;
-        const slug = f.properties.slug;
-        // Touch: first tap on a new dot opens the popup; second tap on the
-        // same dot navigates. Hover devices navigate immediately as before.
-        if (!hasHoverPointer && popupSlug !== slug) {
-          showPopupForFeature(f);
-          return;
-        }
-        if (slug) goto(`/agency/${slug}`);
-      });
-
-      // Touch: tap on empty map dismisses the popup. Hover devices already
-      // handle dismissal via mouseleave.
-      map.on("click", (e: any) => {
-        if (hasHoverPointer || !popupSlug) return;
-        const feats = map.queryRenderedFeatures(e.point, { layers: ["agencies"] });
-        if (feats.length === 0) dismissPopup();
+      setupMapNavigation({
+        map,
+        ml,
+        layerId: "agencies",
+        hasHoverPointer: window.matchMedia("(hover: hover)").matches,
+        isFeatureVisible,
+        buildPopupHtml,
+        getSlug: (p: any) => p.slug,
+        navigate: (slug: string) => goto(`/agency/${slug}`),
       });
 
       // Snapshot signal for the OG bake (scripts/bake-og.mjs). Set after

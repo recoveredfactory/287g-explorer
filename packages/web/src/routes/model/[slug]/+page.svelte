@@ -173,10 +173,20 @@
     </ul>
   </section>
 
-  <!-- Comparison table -->
+  <!-- Comparison table — a real <table> at md: and up (768px comfortably
+       clears the table's min-w-[480px]); below that, the same data as one
+       card per dimension so nothing forces horizontal scroll. Kept as
+       hand-rolled markup rather than routed through the shared
+       ResponsiveDataTable component: that component is built for
+       record-per-row/field-per-column data (agencies), while this table's
+       "records" are the 3 models sitting in *columns* — forcing it through
+       the generic column/row contract would mean pivoting the data just to
+       fit the abstraction, which is more convoluted than this bespoke
+       treatment for a ~6-row static table. -->
   <section class="mt-8 border-t border-slate-200 pt-8">
     <h2 class="font-serif text-xl font-bold text-slate-900">How the three models compare</h2>
-    <div class="mt-4 overflow-x-auto rounded-lg border border-slate-200">
+
+    <div class="mt-4 hidden overflow-x-auto rounded-lg border border-slate-200 md:block">
       <table class="w-full min-w-[480px] text-sm">
         <thead>
           <tr class="border-b border-slate-200">
@@ -210,6 +220,54 @@
         </tbody>
       </table>
     </div>
+
+    <dl class="mt-4 grid gap-3 md:hidden">
+      {#each COMPARISON_ROWS as row}
+        <div class="rounded-lg border p-4" style="border-color: var(--color-paper-200); background: var(--color-paper-50);">
+          <dt class="text-sm font-semibold" style="color: var(--color-ink-900);">{row.label}</dt>
+          <dd class="mt-2 space-y-1.5">
+            <div class="flex items-start justify-between gap-3 text-sm">
+              <span class="shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold"
+                style="background: {MODEL_COLORS['Warrant Service Officer']}; color: {MODEL_TEXT_COLORS['Warrant Service Officer']};">WSO</span>
+              <span class="text-right text-slate-600">{row.wso}</span>
+            </div>
+            <div class="flex items-start justify-between gap-3 text-sm">
+              <span class="shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold"
+                style="background: {MODEL_COLORS['Jail Enforcement Model']}; color: {MODEL_TEXT_COLORS['Jail Enforcement Model']};">JEM</span>
+              <span class="text-right text-slate-600">{row.jem}</span>
+            </div>
+            <div class="flex items-start justify-between gap-3 text-sm">
+              <span class="shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold"
+                style="background: {MODEL_COLORS['Task Force Model']}; color: {MODEL_TEXT_COLORS['Task Force Model']};">TFM</span>
+              <span class="text-right text-slate-600">{row.tfm}</span>
+            </div>
+          </dd>
+        </div>
+      {/each}
+      <div class="rounded-lg border p-4" style="border-color: var(--color-paper-200); background: var(--color-paper-100);">
+        <dt class="text-sm font-semibold" style="color: var(--color-ink-900);">
+          Agencies
+          {#if dateFmt}<span class="block text-xs font-normal" style="color: var(--color-ink-500);">as of {dateFmt}</span>{/if}
+        </dt>
+        <dd class="mt-2 space-y-1.5">
+          <div class="flex items-center justify-between gap-3 text-sm">
+            <span class="shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold"
+              style="background: {MODEL_COLORS['Warrant Service Officer']}; color: {MODEL_TEXT_COLORS['Warrant Service Officer']};">WSO</span>
+            <span class="font-semibold tabular-nums" style="color: var(--color-ink-900);">{intFmt.format(allModelCounts["Warrant Service Officer"] ?? 0)}</span>
+          </div>
+          <div class="flex items-center justify-between gap-3 text-sm">
+            <span class="shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold"
+              style="background: {MODEL_COLORS['Jail Enforcement Model']}; color: {MODEL_TEXT_COLORS['Jail Enforcement Model']};">JEM</span>
+            <span class="font-semibold tabular-nums" style="color: var(--color-ink-900);">{intFmt.format(allModelCounts["Jail Enforcement Model"] ?? 0)}</span>
+          </div>
+          <div class="flex items-center justify-between gap-3 text-sm">
+            <span class="shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold"
+              style="background: {MODEL_COLORS['Task Force Model']}; color: {MODEL_TEXT_COLORS['Task Force Model']};">TFM</span>
+            <span class="font-semibold tabular-nums" style="color: var(--color-ink-900);">{intFmt.format(allModelCounts["Task Force Model"] ?? 0)}</span>
+          </div>
+        </dd>
+      </div>
+    </dl>
   </section>
 
   <!-- See also -->

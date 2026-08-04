@@ -3,6 +3,7 @@
   import { browser } from "$app/environment";
   import { getLocale } from "$lib/paraglide/runtime";
   import { m } from "$lib/paraglide/messages.js";
+  import { prefersReducedMotion } from "$lib/reducedMotion";
 
   // Range is fractional months relative to Jan 2025 (idx 0). minIdx is the
   // animation start (May 2025, idx 4); maxIdx includes a small headroom past today so the last batch of
@@ -54,6 +55,12 @@
   const play = () => {
     if (playing) { stop(); return; }
     if (!browser) return;
+    // Respect prefers-reduced-motion: skip the multi-second sweep and land
+    // directly on the end state rather than animating through it.
+    if ($prefersReducedMotion) {
+      cursorIdx = maxIdx;
+      return;
+    }
     if (cursorIdx >= maxIdx) cursorIdx = minIdx;
     playing = true;
     lastTimestamp = 0;
@@ -71,6 +78,10 @@
     if (rafId != null) { cancelAnimationFrame(rafId); rafId = null; }
     cursorIdx = minIdx;
     if (!browser) return;
+    if ($prefersReducedMotion) {
+      cursorIdx = maxIdx;
+      return;
+    }
     playing = true;
     lastTimestamp = 0;
     rafId = requestAnimationFrame(tick);
@@ -113,16 +124,20 @@
       {/if}
     </button>
 
-    <input
-      type="range"
-      min={minIdx}
-      max={maxIdx}
-      step="0.05"
-      value={cursorIdx}
-      on:input={onSlide}
-      aria-label="Scrub to month"
-      class="h-2 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-slate-900"
-    />
+    <!-- Padding-block around the input pads the *tap target* to ~44px even
+         though the visual track/thumb stay modest — see thumb sizing below. -->
+    <div class="w-full py-2.5">
+      <input
+        type="range"
+        min={minIdx}
+        max={maxIdx}
+        step="0.05"
+        value={cursorIdx}
+        on:input={onSlide}
+        aria-label="Scrub to month"
+        class="h-2.5 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-slate-900"
+      />
+    </div>
 
     <div class="shrink-0 text-right font-mono text-xs tabular-nums text-slate-700 sm:text-sm">
       <div class="font-semibold text-slate-900">{monthLabel(Math.min(cursorIdx, labelMaxIdx))}</div>
@@ -138,10 +153,14 @@
 </div>
 
 <style>
+  /* Visual thumb is 28px (up from 16px) — still modest relative to the
+     track, but combined with the input's py-2.5 wrapper above, the full tap
+     target (thumb + surrounding padding) clears the ~44px touch-target
+     guidance without the thumb itself dominating the control visually. */
   input[type="range"]::-webkit-slider-thumb {
     appearance: none;
-    width: 16px;
-    height: 16px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: #0f172a;
     cursor: pointer;
@@ -149,8 +168,8 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   }
   input[type="range"]::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: #0f172a;
     cursor: pointer;

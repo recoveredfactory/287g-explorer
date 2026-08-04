@@ -36,20 +36,24 @@
   --text-caption: 0.8125rem;
 
   /* Warm "documentary editorial" neutral ramp — replaces the cool
-     Tailwind stone/slate defaults used ambiently across the site.
+     Tailwind stone/slate defaults used ambiently across the site. Kept
+     deliberately low-saturation (paper-50 first shipped at 50% saturation and
+     read as outright yellow at 97% lightness — that combination reads as
+     "cream stationery," not "paper"; ~15% saturation is the ceiling for a
+     background this light to still feel warm rather than tinted).
      Contrast checked against --color-paper-50 (WCAG AA, 4.5:1 normal text):
-     ink-900 15.5:1, ink-700 9.2:1 — safe for any text size, any paper-*
-     background. ink-500 is 4.55:1 on paper-50 (passes, barely) but only
-     4.17:1 on paper-100 (fails AA for normal-size text) — restrict ink-500
+     ink-900 15.9:1, ink-700 9.5:1 — safe for any text size, any paper-*
+     background. ink-500 is 4.66:1 on paper-50 (passes, barely) but only
+     4.39:1 on paper-100 (fails AA for normal-size text) — restrict ink-500
      to paper-50 backgrounds, or to large text (≥18.66px bold / 24px) on
-     paper-100. --color-paper-200 is a *decorative* hairline only (1.25:1
+     paper-100. --color-paper-200 is a *decorative* hairline only (1.22:1
      against paper-50 — well under the 3:1 non-text-contrast guidance for
      meaningful UI boundaries); functional element borders (inputs, buttons,
      card outlines that need to read as identifiable controls) should use
      ink-500 at reduced opacity instead, e.g. color-mix(in srgb, var(--color-ink-500) 45%, transparent). */
-  --color-paper-50: #fbf8f3;
-  --color-paper-100: #f4eee3;
-  --color-paper-200: #e8dfcc;
+  --color-paper-50: #fcfbfb;
+  --color-paper-100: #f6f4f1;
+  --color-paper-200: #e9e4dd;
   --color-ink-900: #241f16;
   --color-ink-700: #4a4335;
   --color-ink-500: #7a7160;
