@@ -522,11 +522,18 @@
     <div class="mx-auto max-w-6xl">
       <div class="flex flex-wrap items-end justify-between gap-4">
         <h2 class="font-serif text-[length:var(--text-h2)] font-bold" style="color: var(--color-ink-900);">{m.home_recent_heading()}</h2>
-        <a
-          href={localizeHref("/states")}
-          class="text-sm font-semibold no-underline hover:underline"
-          style="color: var(--color-ink-900);"
-        >{m.home_recent_browse_all()} →</a>
+        <div class="flex flex-col items-end gap-1 text-sm font-semibold">
+          <a
+            href={localizeHref("/states")}
+            class="no-underline hover:underline"
+            style="color: var(--color-ink-900);"
+          >{m.home_recent_browse_all()} →</a>
+          <a
+            href={localizeHref("/timeline")}
+            class="no-underline hover:underline"
+            style="color: var(--color-ink-700);"
+          >{m.home_recent_see_timeline()} →</a>
+        </div>
       </div>
 
       {#if recentAgencies.length > 0}

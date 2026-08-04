@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { TimelineData } from "./+page.server";
-  import { getLocale } from "$lib/paraglide/runtime";
+  import { getLocale, localizeHref } from "$lib/paraglide/runtime";
   import { m } from "$lib/paraglide/messages.js";
   import { MODEL_COLORS, MODEL_SHORT } from "$lib/colors";
   import { ogImage } from "$lib/ogImage";
@@ -84,4 +84,11 @@
       </li>
     {/each}
   </ol>
+
+  <p class="mt-8 border-t border-paper-200 pt-6 text-sm">
+    <a
+      href={localizeHref("/states")}
+      class="font-semibold text-ink-900 underline underline-offset-2 hover:text-ink-700"
+    >{m.timeline_browse_cta()} →</a>
+  </p>
 </main>
