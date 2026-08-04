@@ -3,6 +3,7 @@
   import { navigating, page } from "$app/stores";
   import { onMount } from "svelte";
   import { m } from "$lib/paraglide/messages.js";
+  import LanguageSwitcher from "$lib/components/LanguageSwitcher.svelte";
   import {
     getLocale,
     locales,
@@ -279,7 +280,16 @@
     style="top: var(--staging-banner-height); background-color: #191919;"
   >
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
-      <!-- Mobile: two rows (logo+lang / nav links). Desktop: single row. -->
+      <!-- Mobile: two rows (logo+lang / nav links). Desktop: single row.
+           The language-switcher markup itself lives once, in
+           lib/components/LanguageSwitcher.svelte — rendered at both
+           positions below so there's one source of truth for the links even
+           though the layout needs two different visual slots for it across
+           breakpoints. (A local {#snippet} would be the more idiomatic
+           Svelte 5 way to do this, but this file still uses the legacy
+           <slot/> API for its own children, and the two can't mix in one
+           component — a real subcomponent sidesteps that without forcing a
+           full runes-mode migration of this already-large layout file.) -->
       <div class="py-3 sm:flex sm:h-14 sm:items-center sm:py-0">
 
         <!-- Row 1 on mobile: logo + lang switcher -->
@@ -290,21 +300,7 @@
           >
             {siteName}
           </a>
-          <!-- Lang switcher — visible on mobile in this row; hidden on sm+ (re-appears in nav) -->
-          <div class="flex items-center gap-2 pl-4 text-xs uppercase tracking-wider text-white sm:hidden" aria-label={m.lang_toggle_aria()}>
-            {#each locales as l, i}
-              {#if i > 0}<span aria-hidden="true" class="text-white/30">·</span>{/if}
-              <a
-                href={hrefFor(l)}
-                on:click={() => rememberLocale(l)}
-                class={l === locale ? "font-semibold text-white no-underline" : "text-white/50 no-underline hover:text-white"}
-                aria-current={l === locale ? "true" : undefined}
-                hreflang={l}
-                rel="alternate"
-                data-sveltekit-reload
-              >{l === "en" ? m.lang_en() : m.lang_es()}</a>
-            {/each}
-          </div>
+          <LanguageSwitcher {hrefFor} extraClass="pl-4 sm:hidden" />
         </div>
 
         <!-- Row 2 on mobile / middle+right on desktop -->
@@ -336,21 +332,7 @@
               aria-current={isNavActive('/about', basePath) ? 'page' : undefined}
             >{m.nav_about()}</a>
           </nav>
-          <!-- Lang switcher — hidden on mobile; visible on desktop -->
-          <div class="ml-auto hidden items-center gap-2 border-l border-white/20 pl-5 text-xs uppercase tracking-wider sm:flex" aria-label={m.lang_toggle_aria()}>
-            {#each locales as l, i}
-              {#if i > 0}<span aria-hidden="true" class="text-white/30">·</span>{/if}
-              <a
-                href={hrefFor(l)}
-                on:click={() => rememberLocale(l)}
-                class={l === locale ? "font-semibold text-white no-underline" : "text-white/50 no-underline hover:text-white"}
-                aria-current={l === locale ? "true" : undefined}
-                hreflang={l}
-                rel="alternate"
-                data-sveltekit-reload
-              >{l === "en" ? m.lang_en() : m.lang_es()}</a>
-            {/each}
-          </div>
+          <LanguageSwitcher {hrefFor} extraClass="ml-auto hidden border-l border-white/20 pl-5 sm:flex" />
         </div>
 
       </div>
