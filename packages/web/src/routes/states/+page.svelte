@@ -169,31 +169,31 @@
 
 <svelte:window on:pointerdown={onOutsidePointer} on:keydown={onWindowKeydown} />
 
-<main id="main-content" class="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
-  <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--color-ink-500);">{m.browse_eyebrow()}</p>
-  <h1 class="mt-1 text-[length:var(--text-h1)] font-black" style="color: var(--color-ink-900);">{m.browse_title()}</h1>
-  <p class="prose-editorial mt-3 max-w-xl">{m.browse_subtitle()}</p>
+<main id="main-content" class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+  <p class="text-xs font-semibold uppercase tracking-widest text-ink-500">{m.browse_eyebrow()}</p>
+  <h1 class="mt-1 text-2xl font-black text-ink-900 sm:text-3xl">{m.browse_title()}</h1>
+  <p class="mt-3 max-w-prose text-sm text-ink-700 sm:text-base">{m.browse_subtitle()}</p>
   {#if data.snapshotDate}
-    <p class="mt-2 text-xs italic" style="color: var(--color-ink-500);">{m.browse_as_of({ date: dateFmt.format(new Date(data.snapshotDate)) })}</p>
+    <p class="mt-2 text-xs italic text-ink-500">{m.browse_as_of({ date: dateFmt.format(new Date(data.snapshotDate)) })}</p>
   {/if}
 
   <!-- Mode toggle -->
-  <div class="mt-6 flex gap-1 rounded-md border p-1" style="border-color: var(--color-paper-200); background: var(--color-paper-100); width: fit-content;">
+  <div class="mt-6 flex w-fit gap-1 rounded-md border border-paper-200 bg-paper-100 p-1">
     {#each [["states", m.browse_mode_states()], ["agencies", m.browse_mode_agencies()]] as [key, label]}
       <button
         type="button"
         on:click={() => { mode = key as Mode; query = ""; includeNational = false; }}
         class="rounded px-3 py-1.5 text-sm font-semibold transition-colors"
-        style={mode === key
-          ? "background: var(--color-ink-900); color: #fff;"
-          : "background: transparent; color: var(--color-ink-700);"}
+        class:bg-ink-900={mode === key}
+        class:text-white={mode === key}
+        class:text-ink-700={mode !== key}
       >{label}</button>
     {/each}
   </div>
 
   <!-- Search + inline checklist dropdown -->
   <div class="browse-search relative mt-3 max-w-sm">
-    <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" style="color: var(--color-ink-500);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
     </svg>
     <input
@@ -201,15 +201,14 @@
       bind:value={query}
       on:focus={() => (dropdownOpen = true)}
       placeholder={mode === "states" ? m.browse_search_placeholder_states() : m.browse_search_placeholder_agencies()}
-      class="w-full rounded-md border py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-1"
-      style="border-color: var(--color-paper-200); background: var(--color-paper-50); color: var(--color-ink-900);"
+      class="w-full rounded-md border border-paper-200 bg-paper-50 py-2 pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-500 focus:border-ink-700 focus:outline-none focus:ring-1 focus:ring-ink-700"
     />
 
     {#if dropdownOpen}
-      <ol class="absolute left-0 top-full z-20 mt-1.5 max-h-96 w-full overflow-y-auto rounded-md border shadow-lg" style="border-color: var(--color-paper-200); background: var(--color-paper-50);">
+      <ol class="absolute left-0 top-full z-20 mt-1.5 max-h-96 w-full overflow-y-auto rounded-md border border-paper-200 bg-paper-50 shadow-lg">
         {#if mode === "states"}
           {#if filteredStates.length === 0}
-            <li class="py-6 text-center text-sm" style="color: var(--color-ink-500);">{m.browse_no_results()}</li>
+            <li class="py-6 text-center text-sm text-ink-500">{m.browse_no_results()}</li>
           {/if}
           {#each filteredStates as row (row.abbr)}
             {@const checked = selection.some((s) => s.kind === "state" && s.id === row.abbr)}
@@ -230,9 +229,9 @@
                   class="min-w-0 flex-1 no-underline hover:underline"
                   on:click|stopPropagation
                 >
-                  <p class="truncate text-sm font-semibold" style="color: var(--color-ink-900);">{row.stateName}</p>
+                  <p class="truncate text-sm font-semibold text-ink-900">{row.stateName}</p>
                 </a>
-                <span class="shrink-0 font-mono text-xs tabular-nums" style="color: var(--color-ink-500);">
+                <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">
                   {m.browse_rank({ rank: stateRankByAbbr.get(row.abbr) ?? 0 })} · {intFmt.format(row.agencyCount)} {m.leaderboard_unit_agencies()}
                 </span>
               </label>
@@ -240,7 +239,7 @@
           {/each}
         {:else}
           {#if filteredAgencies.length === 0}
-            <li class="py-6 text-center text-sm" style="color: var(--color-ink-500);">{m.browse_no_results()}</li>
+            <li class="py-6 text-center text-sm text-ink-500">{m.browse_no_results()}</li>
           {/if}
           {#each filteredAgencies as row (row.slug)}
             {@const checked = selection.some((s) => s.kind === "agency" && s.id === row.slug)}
@@ -261,20 +260,20 @@
                   class="min-w-0 flex-1 no-underline hover:underline"
                   on:click|stopPropagation
                 >
-                  <p class="truncate text-sm font-semibold" style="color: var(--color-ink-900);">{row.name}</p>
-                  <p class="truncate text-xs" style="color: var(--color-ink-500);">{row.state}</p>
+                  <p class="truncate text-sm font-semibold text-ink-900">{row.name}</p>
+                  <p class="truncate text-xs text-ink-500">{row.state}</p>
                 </a>
                 {#if row.primary_model}
                   <span class="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold" style="background: {MODEL_COLORS[row.primary_model]}; color: {MODEL_TEXT_COLORS[row.primary_model]};">{MODEL_SHORT[row.primary_model]}</span>
                 {/if}
-                <span class="shrink-0 font-mono text-xs tabular-nums" style="color: var(--color-ink-500);">
+                <span class="shrink-0 font-mono text-xs tabular-nums text-ink-500">
                   {m.browse_rank({ rank: agencyRankBySlug.get(row.slug) ?? 0 })} · {row.officerCt ? `${intFmt.format(row.officerCt)} ${m.leaderboard_unit_officers()}` : "—"}
                 </span>
               </label>
             </li>
           {/each}
           {#if agenciesTotal > DISPLAY_CAP}
-            <li class="py-3 text-center text-xs italic" style="color: var(--color-ink-500);">
+            <li class="py-3 text-center text-xs italic text-ink-500">
               {m.browse_result_count_capped({ shown: DISPLAY_CAP, total: intFmt.format(agenciesTotal) })}
             </li>
           {/if}
@@ -286,19 +285,17 @@
   <!-- Selection bar -->
   {#if selection.length > 0}
     <div class="mt-3 flex items-center justify-between gap-3 rounded-md border px-3 py-2" style="border-color: #BE6079; background: var(--color-paper-100);">
-      <span class="text-sm font-semibold" style="color: var(--color-ink-900);">{m.browse_selected_count({ count: selection.length })}</span>
+      <span class="text-sm font-semibold text-ink-900">{m.browse_selected_count({ count: selection.length })}</span>
       <div class="flex items-center gap-3">
         <button
           type="button"
           on:click={() => (includeNational = !includeNational)}
-          class="text-xs font-semibold underline underline-offset-2"
-          style="color: var(--color-ink-700);"
+          class="text-xs font-semibold text-ink-700 underline underline-offset-2"
         >{includeNational ? m.browse_remove_national() : m.browse_add_national()}</button>
         <button
           type="button"
           on:click={() => { selection = []; includeNational = false; }}
-          class="text-xs font-semibold underline underline-offset-2"
-          style="color: var(--color-ink-700);"
+          class="text-xs font-semibold text-ink-700 underline underline-offset-2"
         >{m.browse_clear_selection()}</button>
       </div>
     </div>
@@ -306,31 +303,31 @@
 
   <!-- Compare -->
   {#if compareDisplay.length > 0}
-    <section class="mt-10 border-t pt-8" style="border-color: var(--color-paper-200);">
-      <h2 class="font-serif text-lg font-bold" style="color: var(--color-ink-900);">{m.browse_compare_heading({ count: compareResolved.length })}</h2>
+    <section class="mt-10 border-t border-paper-200 pt-8">
+      <h2 class="font-serif text-lg font-bold text-ink-900">{m.browse_compare_heading({ count: compareResolved.length })}</h2>
       <div class="compare-grid mt-4 grid grid-cols-1 gap-4" style="--cmp-cols: {Math.min(4, compareDisplay.length)};">
         {#each compareDisplay as entry}
           <div class="rounded-lg border p-4" style="border-color: {entry.national ? 'var(--color-ink-500)' : 'var(--color-paper-200)'}; background: var(--color-paper-50);">
             {#if entry.kind === "state"}
               {@const row = entry.row}
               {#if entry.national}
-                <p class="font-serif text-lg font-bold" style="color: var(--color-ink-900);">{m.browse_national_label()}</p>
+                <p class="font-serif text-lg font-bold text-ink-900">{m.browse_national_label()}</p>
               {:else}
-                <a href={localizeHref(`/state/${row.abbr.toLowerCase()}`)} class="font-serif text-lg font-bold no-underline hover:underline" style="color: var(--color-ink-900);">{row.stateName}</a>
-                <p class="mt-0.5 font-mono text-[11px] tabular-nums" style="color: var(--color-ink-500);">{m.browse_rank({ rank: stateRankByAbbr.get(row.abbr) ?? 0 })}</p>
+                <a href={localizeHref(`/state/${row.abbr.toLowerCase()}`)} class="font-serif text-lg font-bold no-underline hover:underline text-ink-900">{row.stateName}</a>
+                <p class="mt-0.5 font-mono text-[11px] tabular-nums text-ink-500">{m.browse_rank({ rank: stateRankByAbbr.get(row.abbr) ?? 0 })}</p>
               {/if}
               <dl class="mt-4 space-y-4">
                 <div>
-                  <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_agencies()}</dt>
-                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{intFmt.format(row.agencyCount)}</dd>
+                  <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.compare_stat_agencies()}</dt>
+                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums text-ink-900">{intFmt.format(row.agencyCount)}</dd>
                   <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
                     <div class="h-full rounded-full" style="width: {barPct(row.agencyCount, maxCompareAgencyCount)}%; background: var(--color-ink-700);"></div>
                   </div>
                 </div>
                 {#if row.populationServed}
                   <div>
-                    <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_population()}</dt>
-                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{popFmt.format(row.populationServed)}</dd>
+                    <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.compare_stat_population()}</dt>
+                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums text-ink-900">{popFmt.format(row.populationServed)}</dd>
                     <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
                       <div class="h-full rounded-full" style="width: {barPct(row.populationServed, maxComparePopulationServed)}%; background: var(--color-ink-700);"></div>
                     </div>
@@ -338,21 +335,21 @@
                 {/if}
                 {#if localLePct(row)}
                   <div>
-                    <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_participation()}</dt>
-                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{localLePct(row)}</dd>
+                    <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.compare_stat_participation()}</dt>
+                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums text-ink-900">{localLePct(row)}</dd>
                     <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
                       <div class="h-full rounded-full" style="width: {Math.max(2, Math.round(((row.localParticipating ?? 0) / (row.localLeAgencies || 1)) * 100))}%; background: var(--color-ink-700);"></div>
                     </div>
                   </div>
                 {/if}
                 <div>
-                  <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.compare_stat_models()}</dt>
+                  <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.compare_stat_models()}</dt>
                   <dd class="mt-1.5 space-y-1">
                     {#each MODEL_ORDER as modelName}
                       {#if row.modelCounts[modelName]}
                         <div class="flex items-center justify-between gap-2 text-xs">
                           <span class="rounded px-1.5 py-0.5 font-semibold" style="background: {MODEL_COLORS[modelName]}; color: {MODEL_TEXT_COLORS[modelName]};">{MODEL_SHORT[modelName]}</span>
-                          <span class="font-mono tabular-nums" style="color: var(--color-ink-700);">{row.modelCounts[modelName]}</span>
+                          <span class="font-mono tabular-nums text-ink-700">{row.modelCounts[modelName]}</span>
                         </div>
                       {/if}
                     {/each}
@@ -362,16 +359,16 @@
             {:else}
               {@const row = entry.row}
               {#if entry.national}
-                <p class="font-serif text-base font-bold leading-tight" style="color: var(--color-ink-900);">{m.browse_national_label()}</p>
+                <p class="font-serif text-base font-bold leading-tight text-ink-900">{m.browse_national_label()}</p>
               {:else}
-                <a href={localizeHref(`/agency/${row.slug}`)} class="font-serif text-base font-bold leading-tight no-underline hover:underline" style="color: var(--color-ink-900);">{row.name}</a>
-                <p class="mt-0.5 text-xs" style="color: var(--color-ink-500);">{row.state}</p>
-                <p class="mt-0.5 font-mono text-[11px] tabular-nums" style="color: var(--color-ink-500);">{m.browse_rank({ rank: agencyRankBySlug.get(row.slug) ?? 0 })}</p>
+                <a href={localizeHref(`/agency/${row.slug}`)} class="font-serif text-base font-bold leading-tight no-underline hover:underline text-ink-900">{row.name}</a>
+                <p class="mt-0.5 text-xs text-ink-500">{row.state}</p>
+                <p class="mt-0.5 font-mono text-[11px] tabular-nums text-ink-500">{m.browse_rank({ rank: agencyRankBySlug.get(row.slug) ?? 0 })}</p>
               {/if}
               <dl class="mt-4 space-y-4">
                 <div>
-                  <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.leaderboard_unit_officers()}</dt>
-                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{row.officerCt ? intFmt.format(row.officerCt) : "—"}</dd>
+                  <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.leaderboard_unit_officers()}</dt>
+                  <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums text-ink-900">{row.officerCt ? intFmt.format(row.officerCt) : "—"}</dd>
                   {#if row.officerCt}
                     <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
                       <div class="h-full rounded-full" style="width: {barPct(row.officerCt, maxCompareOfficerCt)}%; background: var(--color-ink-700);"></div>
@@ -380,8 +377,8 @@
                 </div>
                 {#if row.population}
                   <div>
-                    <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.browse_agency_population()}</dt>
-                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums" style="color: var(--color-ink-900);">{popFmt.format(row.population)}</dd>
+                    <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.browse_agency_population()}</dt>
+                    <dd class="mt-0.5 font-mono text-xl font-bold tabular-nums text-ink-900">{popFmt.format(row.population)}</dd>
                     <div class="mt-1 h-1 w-full overflow-hidden rounded-full" style="background: var(--color-paper-200);">
                       <div class="h-full rounded-full" style="width: {barPct(row.population, maxComparePopulation)}%; background: var(--color-ink-700);"></div>
                     </div>
@@ -389,7 +386,7 @@
                 {/if}
                 {#if row.primary_model}
                   <div>
-                    <dt class="text-[10px] font-semibold uppercase tracking-wider" style="color: var(--color-ink-500);">{m.browse_agency_model_label()}</dt>
+                    <dt class="text-[10px] font-semibold uppercase tracking-wider text-ink-500">{m.browse_agency_model_label()}</dt>
                     <dd class="mt-1">
                       <span class="rounded px-1.5 py-0.5 text-xs font-semibold" style="background: {MODEL_COLORS[row.primary_model]}; color: {MODEL_TEXT_COLORS[row.primary_model]};">{MODEL_SHORT[row.primary_model]}</span>
                     </dd>
