@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import type { Agreement, HistoryEvent } from "$lib/homeData.types";
-  import { MODEL_COLORS, MODEL_TEXT_COLORS, MODEL_DARK_COLORS, MODEL_SHORT, MODEL_SLUG } from "$lib/colors";
+  import { MODEL_COLORS, MODEL_TEXT_COLORS, MODEL_SHORT, MODEL_SLUG } from "$lib/colors";
   import { STATE_NAMES } from "$lib/states";
   import { localizeHref, getLocale } from "$lib/paraglide/runtime";
   import { m } from "$lib/paraglide/messages.js";
@@ -414,10 +414,12 @@
       <!-- Model + signed date, with a link straight to the agreement PDF. -->
       <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <div>
-          <h3
-            class="font-serif text-lg font-bold leading-tight"
-            style="color: {MODEL_DARK_COLORS[ag.model ?? ''] ?? '#0f172a'};"
-          >{MODEL_SHORT[ag.model ?? ''] ?? ag.model ?? m.agency_agreements_other_model()}</h3>
+          <h3 class="leading-tight">
+            <span
+              class="inline-block rounded px-2.5 py-1 font-serif text-base font-bold"
+              style="background: {MODEL_COLORS[ag.model ?? ''] ?? '#e2e8f0'}; color: {MODEL_TEXT_COLORS[ag.model ?? ''] ?? '#120e09'};"
+            >{MODEL_SHORT[ag.model ?? ''] ?? ag.model ?? m.agency_agreements_other_model()}</span>
+          </h3>
           {#if agDate}
             <p class="mt-0.5 text-sm text-ink-500">{m.agency_agreements_signed({ date: agDate })}</p>
           {/if}
