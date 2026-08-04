@@ -390,10 +390,12 @@ async function bakeCard(outPath, fields) {
 
 // ---------- model metadata ----------
 
+// KEEP IN SYNC WITH packages/web/src/lib/colors.ts (MODEL_COLORS) — Satori
+// bake scripts can't import the .ts file directly, so this is a duplicate.
 const MODEL_COLORS = {
-  "Jail Enforcement Model": "#BE6079",
-  "Task Force Model": "#3C97E2",
-  "Warrant Service Officer": "#5E9148",
+  "Jail Enforcement Model": "#C8788D",
+  "Task Force Model": "#59A7E6",
+  "Warrant Service Officer": "#76A263",
 };
 const MODEL_SLUG = {
   "Jail Enforcement Model": "jail",

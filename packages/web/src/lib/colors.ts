@@ -3,18 +3,20 @@
 // (Tailwind/CSS can't read this .ts file directly, and Satori bake scripts /
 // MapLibre paint expressions consume these hex values directly). Keep the two
 // in sync by hand if these ever change.
+// Lightened ~15% toward white from the original #BE6079/#3C97E2/#5E9148 (kept
+// as a comment below since the map/legend/chart hues are otherwise
+// load-bearing for comprehension — this was a deliberate, requested
+// lightening, not a casual tweak). Original: jail #BE6079, taskforce
+// #3C97E2, wso #5E9148.
 export const MODEL_COLORS: Record<string, string> = {
-  "Jail Enforcement Model": "#BE6079",
-  "Task Force Model": "#3C97E2",
-  "Warrant Service Officer": "#5E9148",
+  "Jail Enforcement Model": "#C8788D",
+  "Task Force Model": "#59A7E6",
+  "Warrant Service Officer": "#76A263",
 };
 
-// White text on these three backgrounds used to check at 4.09:1 (jail),
-// 3.13:1 (taskforce), 3.74:1 (wso) against WCAG AA's 4.5:1 normal-text
-// threshold — all three failed for small badge text. Rather than touch
-// MODEL_COLORS (load-bearing for map/legend/chart comprehension), switched
-// the text to a warm near-black that clears AA against all three:
-// 4.70:1 (jail), 6.15:1 (taskforce), 5.14:1 (wso).
+// White text on these three backgrounds used to fail WCAG AA for small badge
+// text. Near-black text clears AA against the current (lightened) MODEL_COLORS
+// with room to spare: 5.97:1 (jail), 7.41:1 (taskforce), 6.52:1 (wso).
 export const MODEL_TEXT_COLORS: Record<string, string> = {
   "Jail Enforcement Model": "#120e09",
   "Task Force Model": "#120e09",
