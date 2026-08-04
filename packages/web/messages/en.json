@@ -139,6 +139,8 @@
   "home_search_use_detected_state": "Use my state ({state})",
   "home_view_state_page": "View {state} page",
   "home_th_foia": "FOIA",
+  "map_expand": "Expand map",
+  "map_collapse": "Close map",
   "home_search_year_signed": "Year signed",
   "home_pagination_previous": "Previous",
   "home_pagination_next": "Next",

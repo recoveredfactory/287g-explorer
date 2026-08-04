@@ -6,6 +6,7 @@
   import { localizeHref, getLocale } from "$lib/paraglide/runtime";
   import { m } from "$lib/paraglide/messages.js";
   import NationalMap from "$lib/components/NationalMap.svelte";
+  import ExpandableMapFrame from "$lib/components/ExpandableMapFrame.svelte";
   import TrendCharts from "$lib/components/TrendCharts.svelte";
   import ModelLink from "$lib/components/ModelLink.svelte";
   import NewsAiWarning from "$lib/components/NewsAiWarning.svelte";
@@ -237,19 +238,18 @@
   <!-- ── Map ──────────────────────────────────────────────────────────────── -->
   <section class="mt-8">
     <h2 class="font-serif text-lg font-bold text-slate-900 sm:text-xl">{m.state_map_heading()}</h2>
-    <div
-      class="relative mt-3 h-[260px] overflow-hidden rounded-lg border border-slate-200 shadow-sm sm:h-[320px]"
-      aria-label={m.state_map_aria({ state: stateName })}
-    >
-      <NationalMap
-        agencies={data.mapAgencies}
-        terminatedAgencies={[]}
-        {selectedStates}
-        focusSelected
-        focusPadding={24}
-        focusMaxZoom={7}
-        cursorIdx={null}
-      />
+    <div class="relative mt-3">
+      <ExpandableMapFrame ariaLabel={m.state_map_aria({ state: stateName })}>
+        <NationalMap
+          agencies={data.mapAgencies}
+          terminatedAgencies={[]}
+          {selectedStates}
+          focusSelected
+          focusPadding={24}
+          focusMaxZoom={7}
+          cursorIdx={null}
+        />
+      </ExpandableMapFrame>
     </div>
   </section>
 

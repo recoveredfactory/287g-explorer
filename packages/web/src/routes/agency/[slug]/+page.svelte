@@ -8,6 +8,7 @@
   import { ogImage } from "$lib/ogImage";
   import AgencySearch from "$lib/components/AgencySearch.svelte";
   import AgencyMap from "$lib/components/AgencyMap.svelte";
+  import ExpandableMapFrame from "$lib/components/ExpandableMapFrame.svelte";
   import Gloss from "$lib/components/Gloss.svelte";
 
   export let data: PageData;
@@ -354,17 +355,19 @@
   {/if}
 
   <!-- Location map -->
-  <div class="mt-6 h-[260px] overflow-hidden rounded-lg border border-slate-200 shadow-sm sm:h-[320px]">
-    {#key agency.slug}
-      <AgencyMap
-        lat={agency.lat}
-        lng={agency.lng}
-        state={agency.state}
-        primaryModel={agency.primary_model}
-        {agencies}
-        currentSlug={agency.slug}
-      />
-    {/key}
+  <div class="mt-6">
+    <ExpandableMapFrame ariaLabel={m.state_map_aria({ state: STATE_NAMES[agency.state] ?? agency.state })}>
+      {#key agency.slug}
+        <AgencyMap
+          lat={agency.lat}
+          lng={agency.lng}
+          state={agency.state}
+          primaryModel={agency.primary_model}
+          {agencies}
+          currentSlug={agency.slug}
+        />
+      {/key}
+    </ExpandableMapFrame>
   </div>
 
   <!-- Jurisdiction -->

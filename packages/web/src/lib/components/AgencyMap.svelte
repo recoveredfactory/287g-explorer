@@ -84,6 +84,7 @@
 
   let container: HTMLDivElement;
   let map: any = null;
+  let resizeObserver: ResizeObserver | null = null;
 
   onMount(async () => {
     if (!browser || !container) return;
@@ -112,6 +113,13 @@
       attributionControl: { compact: true },
     });
     map.addControl(new ml.NavigationControl({ showCompass: false }), "top-right");
+
+    // Container can resize after mount (ExpandableMapFrame's tap-to-expand
+    // toggles this container between a small inline box and a full-viewport
+    // overlay) — without this, the canvas would keep rendering at its
+    // mount-time size inside the new container dimensions.
+    resizeObserver = new ResizeObserver(() => map?.resize());
+    resizeObserver.observe(container);
 
     map.on("load", async () => {
       map.resize();
@@ -384,6 +392,7 @@
   });
 
   onDestroy(() => {
+    resizeObserver?.disconnect();
     if (map) { map.remove(); map = null; }
   });
 </script>
