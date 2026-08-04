@@ -181,13 +181,13 @@
 <main id="main-content" class="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-12">
   <!-- ── Header ──────────────────────────────────────────────────────────────── -->
   <header>
-    <p class="text-xs font-semibold uppercase tracking-widest text-amber-600">
+    <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--color-ink-500);">
       {m.states_index_eyebrow()}
     </p>
-    <h1 class="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
+    <h1 class="mt-1 text-[length:var(--text-h1)] font-black" style="color: var(--color-ink-900);">
       {m.states_index_title()}
     </h1>
-    <p class="mt-3 max-w-prose text-sm leading-relaxed text-slate-600">
+    <p class="mt-3 max-w-prose text-sm leading-relaxed" style="color: var(--color-ink-700);">
       {m.states_index_subtitle({ count: intFmt.format(rows.length) })}
     </p>
 
@@ -202,7 +202,8 @@
       <button
         type="button"
         on:click={allExpanded ? collapseAll : expandAll}
-        class="rounded-full border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:border-slate-500 hover:text-slate-900"
+        class="rounded-full border px-3 py-1.5 text-sm font-medium transition-colors"
+        style="border-color: var(--color-paper-200); color: var(--color-ink-700);"
       >
         {allExpanded ? m.states_index_collapse_all() : m.states_index_expand_all()}
       </button>
@@ -213,10 +214,11 @@
          shared geo cache. -->
     {#if detectedRow && !bannerDismissed}
       <div
-        class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5"
+        class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-2.5"
+        style="border-color: var(--color-paper-200); background: var(--color-paper-100);"
       >
-        <p class="flex items-center gap-2 text-sm text-slate-700">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 shrink-0 text-amber-600" aria-hidden="true">
+        <p class="flex items-center gap-2 text-sm" style="color: var(--color-ink-700);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4 shrink-0" style="color: var(--color-ink-500);" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
           </svg>
@@ -226,7 +228,8 @@
           <button
             type="button"
             on:click={jumpToDetected}
-            class="whitespace-nowrap rounded-full bg-slate-900 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
+            class="whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold text-white transition-colors"
+            style="background: var(--color-ink-900);"
           >
             {m.states_index_detected_jump()}
           </button>
@@ -234,7 +237,8 @@
             type="button"
             on:click={() => (bannerDismissed = true)}
             aria-label={m.states_index_detected_dismiss()}
-            class="rounded-full p-1.5 text-slate-400 transition-colors hover:bg-amber-100 hover:text-slate-600"
+            class="rounded-full p-1.5 transition-colors hover:bg-paper-200"
+            style="color: var(--color-ink-500);"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="h-4 w-4" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -253,31 +257,29 @@
       {@const leePct = leePctLabel(row.localLeAgencies, row.localParticipating)}
       <article
         id={`state-${row.abbr}`}
-        class="scroll-mt-24 rounded-lg border bg-white p-5 shadow-sm transition duration-300 sm:p-6 {justJumped ===
-        row.abbr
-          ? 'border-amber-400 ring-2 ring-amber-300'
-          : 'border-slate-200'}"
+        class="scroll-mt-24 rounded-lg border p-5 shadow-sm transition duration-300 sm:p-6"
+        style="background: var(--color-paper-50); border-color: {justJumped === row.abbr ? '#BE6079' : 'var(--color-paper-200)'}; {justJumped === row.abbr ? 'box-shadow: 0 0 0 2px rgba(190,96,121,0.35);' : ''}"
       >
         <!-- Topline header: state name + dead-simple figures -->
         <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 class="font-serif text-lg font-bold sm:text-xl">
             <a
               href={localizeHref(`/state/${row.abbr.toLowerCase()}`)}
-              class="text-slate-900 no-underline hover:underline"
+              class="text-ink-900 no-underline hover:underline"
               aria-label={m.states_index_open_state({ state: row.stateName })}
             >{row.stateName}</a>
           </h2>
-          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600">
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-700">
             {#if SHOW_LEGISLATION_STANCE && row.news?.legislation}
               <LegislationBadge legislation={row.news.legislation} />
             {/if}
             <span>
-              <span class="font-semibold text-slate-900">{intFmt.format(row.agencyCount)}</span>
+              <span class="font-semibold text-ink-900">{intFmt.format(row.agencyCount)}</span>
               {row.agencyCount === 1 ? m.state_agency_one() : m.state_agency_other()}
             </span>
             {#if leePct !== null}
               <span>
-                <span class="font-semibold text-slate-900">{leePct}%</span>
+                <span class="font-semibold text-ink-900">{leePct}%</span>
                 {m.states_index_local_le_pct()}
               </span>
             {/if}
@@ -285,14 +287,14 @@
               {#if row.modelCounts[model]}
                 <span class="flex items-center gap-1.5">
                   <span class="inline-block h-2 w-2 rounded-full" style="background: {MODEL_COLORS[model]};"></span>
-                  <span class="font-semibold text-slate-900">{row.modelCounts[model]}</span>
+                  <span class="font-semibold text-ink-900">{row.modelCounts[model]}</span>
                   {MODEL_SHORT[model]}
                 </span>
               {/if}
             {/each}
             {#if row.populationServed}
               <span>
-                <span class="font-semibold text-slate-900">{popFmt.format(row.populationServed)}</span>
+                <span class="font-semibold text-ink-900">{popFmt.format(row.populationServed)}</span>
                 {m.state_covered()}
               </span>
             {/if}
@@ -320,19 +322,19 @@
             {#if row.news}
               <!-- This state's own last-built date, ahead of the summary (the
                    stance pill rides up in the card's topline figures). -->
-              <p class="mb-2 text-xs italic text-slate-400">
+              <p class="mb-2 text-xs italic text-ink-500">
                 {m.news_updated({ date: builtDate(row.news.built_at) })} ·
                 {m.news_generated_with()}
                 <a
                   href="https://promptql.io"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="underline decoration-slate-300 underline-offset-2 hover:text-slate-600"
+                  class="underline decoration-paper-200 underline-offset-2 hover:text-ink-700"
                 >{m.news_ai_promptql()}</a>
               </p>
               <div class="news-prose news-tldr max-w-prose">{@html row.news.tldr_html}</div>
             {:else}
-              <p class="text-sm italic text-slate-400">{m.states_index_no_summary()}</p>
+              <p class="text-sm italic text-ink-500">{m.states_index_no_summary()}</p>
             {/if}
           </div>
           {#if row.map}
@@ -383,7 +385,7 @@
                 <p class="mt-4 text-sm">
                   <a
                     href={localizeHref(`/state/${row.abbr.toLowerCase()}`)}
-                    class="font-medium text-slate-600 underline decoration-slate-300 underline-offset-2 hover:text-slate-900"
+                    class="font-medium text-ink-700 underline decoration-paper-200 underline-offset-2 hover:text-ink-900"
                   >{m.states_index_explore_state({ state: row.stateName })}
                     <span aria-hidden="true">→</span></a>
                 </p>
@@ -420,7 +422,7 @@
                clipped tease — the chart included — as the inducement to click. -->
           {#if canExpand}
             <div class="mt-5 flex items-center gap-3">
-              <span class="h-px flex-1 bg-slate-200" aria-hidden="true"></span>
+              <span class="h-px flex-1 bg-paper-200" aria-hidden="true"></span>
               <button
                 type="button"
                 class="news-toggle"
@@ -431,7 +433,7 @@
                 {isExp ? m.states_index_hide_summary() : m.states_index_read_summary()}
                 <span class="news-chev" class:rotate-180={isExp} aria-hidden="true">▾</span>
               </button>
-              <span class="h-px flex-1 bg-slate-200" aria-hidden="true"></span>
+              <span class="h-px flex-1 bg-paper-200" aria-hidden="true"></span>
             </div>
           {/if}
 
@@ -473,7 +475,7 @@
             <!-- Foot collapse (like the state page) so a long expanded card
                  doesn't force a scroll back up to close it. -->
             <div class="mt-6 flex items-center gap-3">
-              <span class="h-px flex-1 bg-slate-200" aria-hidden="true"></span>
+              <span class="h-px flex-1 bg-paper-200" aria-hidden="true"></span>
               <button
                 type="button"
                 class="news-toggle"
@@ -484,7 +486,7 @@
                 {m.states_index_hide_summary()}
                 <span class="news-chev rotate-180" aria-hidden="true">▾</span>
               </button>
-              <span class="h-px flex-1 bg-slate-200" aria-hidden="true"></span>
+              <span class="h-px flex-1 bg-paper-200" aria-hidden="true"></span>
             </div>
           {/if}
         {/if}
@@ -516,7 +518,7 @@
     /* Transparent edge sits at the start of line 3 (6rem − 2.4rem = 3.6rem ≈ 2
        lines), so lines 1–2 read clean and only line 3 fades out. */
     height: 2.4rem;
-    background: linear-gradient(to bottom, transparent, #fff);
+    background: linear-gradient(to bottom, transparent, var(--color-paper-50));
     pointer-events: none;
     opacity: 1;
     transition: opacity 240ms ease;

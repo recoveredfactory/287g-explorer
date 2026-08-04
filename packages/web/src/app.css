@@ -164,7 +164,7 @@
 
 @layer components {
   .prose-editorial {
-    @apply text-base leading-relaxed text-slate-700 sm:text-lg;
+    @apply text-base leading-relaxed text-ink-700 sm:text-lg;
   }
 
   .prose-editorial p {
@@ -172,15 +172,15 @@
   }
 
   .prose-editorial strong {
-    @apply font-semibold text-slate-900;
+    @apply font-semibold text-ink-900;
   }
 
   .prose-editorial a {
-    @apply text-slate-900 decoration-1 underline decoration-slate-400 underline-offset-2;
+    @apply text-ink-900 decoration-1 underline decoration-ink-500 underline-offset-2;
   }
 
   .prose-editorial a:hover {
-    @apply decoration-slate-700;
+    @apply decoration-ink-900;
   }
 
   .prose-editorial ul,
@@ -202,7 +202,7 @@
      .prose-editorial so the news measure can stay tight while the map/chart
      above it use the full content width. Shared inline element styling: */
   .news-prose strong {
-    @apply font-semibold text-slate-900;
+    @apply font-semibold text-ink-900;
   }
   .news-prose a {
     /* font-normal overrides the global semibold link weight — with this many
@@ -239,23 +239,23 @@
      in the news serif at a comfortable 16px with open leading. */
   .news-tldr {
     font-family: var(--font-news-serif);
-    @apply text-lg italic leading-[1.7] text-slate-700;
+    @apply text-lg italic leading-[1.7] text-ink-700;
   }
 
   /* Expanded body: same size as the TL;DR but darker and roman — the main read.
      Serif + open leading for a classic, newspaper-like reading rhythm. */
   .news-body {
     font-family: var(--font-news-serif);
-    @apply text-base leading-[1.8] text-slate-800;
+    @apply text-base leading-[1.8] text-ink-900;
   }
   .news-body h2 {
-    @apply mt-6 font-serif text-lg font-bold text-slate-900;
+    @apply mt-6 font-serif text-lg font-bold text-ink-900;
   }
   .news-body h3 {
-    @apply mt-5 font-serif text-[15px] font-bold text-slate-800;
+    @apply mt-5 font-serif text-[15px] font-bold text-ink-900;
   }
   .news-body h4 {
-    @apply mt-4 text-sm font-semibold text-slate-800;
+    @apply mt-4 text-sm font-semibold text-ink-900;
   }
 
   /* Expand/collapse trigger — a centered pill flanked by hairline rules
@@ -264,11 +264,11 @@
     @apply flex max-w-prose items-center gap-3;
   }
   .news-rule {
-    @apply h-px flex-1 bg-slate-200;
+    @apply h-px flex-1 bg-paper-200;
   }
   .news-toggle {
-    @apply inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5
-      text-sm font-medium text-slate-700 transition-colors hover:bg-slate-200;
+    @apply inline-flex items-center gap-1.5 rounded-full bg-paper-100 px-3 py-1.5
+      text-sm font-medium text-ink-700 transition-colors hover:bg-paper-200;
   }
   .news-chev {
     @apply text-[0.7rem] leading-none transition-transform duration-200;
@@ -278,14 +278,14 @@
      container (.news-articles wrapper sets max-height + overflow). The header
      sticks so columns stay labeled while the long list scrolls. */
   .news-articles-table {
-    @apply w-full border-collapse text-left text-xs text-slate-600;
+    @apply w-full border-collapse text-left text-xs text-ink-700;
   }
   .news-articles-table th {
-    @apply sticky top-0 z-10 whitespace-nowrap border-b border-slate-300 bg-slate-50
-      px-2 py-2 text-left align-bottom font-semibold text-slate-700;
+    @apply sticky top-0 z-10 whitespace-nowrap border-b border-paper-200 bg-paper-100
+      px-2 py-2 text-left align-bottom font-semibold text-ink-700;
   }
   .news-articles-table td {
-    @apply border-b border-slate-100 px-2 py-1.5 align-top;
+    @apply border-b border-paper-100 px-2 py-1.5 align-top;
   }
   .news-articles-table a {
     /* Article titles read as a news index: deep-ink link with a faint
