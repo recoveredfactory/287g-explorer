@@ -20,14 +20,14 @@
   // current state pops without dimming neighbors as harshly): stateBg here
   // recedes closer to the ocean tone, stateHighlight pops to near-white.
   const p = {
-    bg: "#e6dfd0",
-    stateBg: "#eee7d8",
+    bg: "#F0ECE3",
+    stateBg: "#F5F1E8",
     stateHighlight: "#fdfdfd",
     stateLines: "#7a7160",
     stateLineWidth: 0.7,
     stateHighlightBorder: "#BE6079",
     stateHighlightBorderWidth: 1.8,
-    county: "#e0d6c0",
+    county: "#E9E2D3",
     roadCasing: "#fdfdfd",
     roadFill: "#a8916e",
     roadMedium: "#a8916e",

@@ -116,11 +116,11 @@
   // graphic) keeps its own separately-set dark fill/line further down,
   // deliberately: that's a distinct, already-published visual asset.
   const C = {
-    bg: "#e6dfd0",
-    state: "#f8f5ef",
+    bg: "#F0ECE3",
+    state: "#FBF9F6",
     line: "#7a7160",
     lineWidth: 0.7,
-    county: "#e0d6c0",
+    county: "#E9E2D3",
     roadCasing: "#fdfdfd",
     roadFill: "#a8916e",
     roadMajorCasing: "#fdfdfd",
