@@ -109,6 +109,44 @@
   // participating===0 yet is very much not 287(g)-free. See #138.
   $: statesWithAnyAgreement = new Set(data.agencies.map((a) => a.state));
 
+  // "Most active this month" — real computed net signed-vs-terminated
+  // agreements per state, for the most recent month actually present in the
+  // data (not wall-clock "now", since a snapshot can lag). Data-driven, no
+  // editorial narrative, per AGENTS.md.
+  $: latestActivityYm = (() => {
+    const dates = [
+      ...data.agencies.map((a) => a.signed_date).filter((d): d is string => !!d),
+      ...data.terminatedAgencies.map((a) => a.terminated_date).filter((d): d is string => !!d),
+    ];
+    return dates.length ? (dates.map((d) => d.slice(0, 7)).sort().at(-1) ?? null) : null;
+  })();
+
+  $: monthLabel = latestActivityYm
+    ? new Intl.DateTimeFormat(getLocale() === "es" ? "es-MX" : "en-US", { year: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${latestActivityYm}-01T00:00:00Z`))
+    : "";
+
+  type StateActivity = { abbr: string; net: number };
+  $: mostActiveStates = ((): StateActivity[] => {
+    if (!latestActivityYm) return [];
+    const byState = new Map<string, { signed: number; terminated: number }>();
+    const bump = (state: string, key: "signed" | "terminated") => {
+      const cur = byState.get(state) ?? { signed: 0, terminated: 0 };
+      cur[key]++;
+      byState.set(state, cur);
+    };
+    for (const a of data.agencies) {
+      if (a.signed_date?.slice(0, 7) === latestActivityYm) bump(a.state, "signed");
+    }
+    for (const a of data.terminatedAgencies) {
+      if (a.terminated_date?.slice(0, 7) === latestActivityYm) bump(a.state, "terminated");
+    }
+    return [...byState.entries()]
+      .map(([abbr, { signed, terminated }]) => ({ abbr, net: signed - terminated }))
+      .filter((s) => s.net > 0)
+      .sort((a, b) => b.net - a.net)
+      .slice(0, 3);
+  })();
+
   // Geo-aware participation callout. Renders once client-side geo resolves.
   // FL gets a distinct message because SB 168 (2019) mandates 287(g)
   // cooperation — its high coverage isn't comparable to voluntary states.
@@ -454,6 +492,43 @@
         class="text-sm font-semibold underline-offset-2 hover:underline"
         style="color: var(--color-ink-700);"
       >{m.home_map_use_cta()}</a>
+    </div>
+  </section>
+
+  <!-- ── Browse & compare / most active this month ────────────────────────── -->
+  <section class="border-b px-4 py-12 sm:px-6 sm:py-16" style="border-color: var(--color-paper-200); background: var(--color-paper-50);">
+    <div class="mx-auto grid max-w-6xl gap-6 {mostActiveStates.length > 0 ? 'sm:grid-cols-2' : ''}">
+      <div class="flex flex-col justify-between rounded-lg border p-6" style="border-color: var(--color-paper-200); background: var(--color-paper-100);">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--color-ink-500);">{m.browse_eyebrow()}</p>
+          <h2 class="mt-1 font-serif text-xl font-bold" style="color: var(--color-ink-900);">{m.home_browse_cta_heading()}</h2>
+          <p class="mt-2 text-sm leading-relaxed" style="color: var(--color-ink-700);">{m.home_browse_cta_body()}</p>
+        </div>
+        <a
+          href={localizeHref("/states")}
+          class="mt-4 inline-flex w-fit items-center gap-1 text-sm font-semibold no-underline hover:underline"
+          style="color: var(--color-ink-900);"
+        >{m.home_browse_cta_link()} →</a>
+      </div>
+
+      {#if mostActiveStates.length > 0}
+        <div class="rounded-lg border p-6" style="border-color: var(--color-paper-200); background: var(--color-paper-100);">
+          <p class="text-xs font-semibold uppercase tracking-widest" style="color: var(--color-ink-500);">{m.home_active_heading()}</p>
+          <p class="mt-1 text-sm" style="color: var(--color-ink-700);">{m.home_active_body({ month: monthLabel })}</p>
+          <ul class="mt-4 space-y-2.5">
+            {#each mostActiveStates as s (s.abbr)}
+              <li class="flex items-center justify-between gap-3">
+                <a
+                  href={localizeHref(`/state/${s.abbr.toLowerCase()}`)}
+                  class="text-sm font-semibold no-underline hover:underline"
+                  style="color: var(--color-ink-900);"
+                >{STATE_NAMES[s.abbr] ?? s.abbr}</a>
+                <span class="font-mono text-sm tabular-nums" style="color: var(--color-ink-700);">{m.home_active_delta({ count: s.net })}</span>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
     </div>
   </section>
 
