@@ -58,19 +58,18 @@
   --color-ink-700: #4a4335;
   --color-ink-500: #7a7160;
 
-  /* Sparing accent — pull-quotes, active filter chips, "new/recent" markers.
-     Absorbs the ad hoc orange (#e8792b) that was previously hardcoded
-     independently in SurgeTimeline.svelte and NationalMap's "newOld" mode;
-     same purpose (highlighting recency/change), one token now. */
-  --color-accent-clay: #b5502c;
+  /* No separate "accent" hue site-wide, by design: highlight/link color
+     defaults to deep ink (--color-ink-900/700) everywhere. The exception is
+     model-themed content (/model/[slug], /agency/[slug]) which already uses
+     that page's own model color (rose/blue/green, from lib/colors.ts) for
+     its accents — that's the *only* place a hue other than ink appears as a
+     highlight. No invented "brand accent" color exists in this system. */
 }
 
 @layer base {
   :root {
     --site-header-height: 5rem; /* mobile: logo+lang row + nav row (~80px) */
     --staging-banner-height: 0px; /* overridden inline on non-prod stages */
-    --color-navy: #1e3a5f;
-    --color-navy-light: #2d5282;
     /* KEEP IN SYNC WITH packages/web/src/lib/colors.ts (MODEL_COLORS) — that
        file is the authoritative source (also consumed by MapLibre paint
        expressions and Satori bake scripts, which can't read CSS custom
@@ -206,15 +205,18 @@
   .news-prose a {
     /* font-normal overrides the global semibold link weight — with this many
        inline citations, bold links read as noise. The pop comes from the
-       underline instead: a navy hairline at 2px, set just under the text, that
-       deepens to full navy on hover. Reads clearly as a link without shouting. */
-    @apply font-normal text-slate-900 underline underline-offset-2 transition-colors duration-150;
-    text-decoration-color: var(--color-navy-light);
+       underline instead: a deep-ink hairline at 2px, set just under the text,
+       that deepens further on hover. Reads clearly as a link without shouting
+       or reaching for a hue — state pages mix multiple models, so there's no
+       single model color to theme these links by (see the model/agency pages
+       for where model-color accents apply instead). */
+    @apply font-normal underline underline-offset-2 transition-colors duration-150;
+    color: var(--color-ink-900);
+    text-decoration-color: var(--color-ink-500);
     text-decoration-thickness: 2px;
   }
   .news-prose a:hover {
-    color: var(--color-navy);
-    text-decoration-color: var(--color-navy);
+    text-decoration-color: var(--color-ink-900);
   }
   .news-prose ul,
   .news-prose ol {
@@ -284,17 +286,17 @@
     @apply border-b border-slate-100 px-2 py-1.5 align-top;
   }
   .news-articles-table a {
-    /* Article titles read as a news index: navy link with a faint hairline
-       underline (the dense table can't take a heavy rule) that fills in on
-       hover. */
+    /* Article titles read as a news index: deep-ink link with a faint
+       hairline underline (the dense table can't take a heavy rule) that
+       fills in on hover. */
     @apply font-medium underline underline-offset-2 transition-colors;
-    color: var(--color-navy-light);
-    text-decoration-color: color-mix(in srgb, var(--color-navy-light) 22%, transparent);
+    color: var(--color-ink-700);
+    text-decoration-color: color-mix(in srgb, var(--color-ink-500) 35%, transparent);
     text-decoration-thickness: 1px;
   }
   .news-articles-table a:hover {
-    color: var(--color-navy);
-    text-decoration-color: color-mix(in srgb, var(--color-navy) 55%, transparent);
+    color: var(--color-ink-900);
+    text-decoration-color: color-mix(in srgb, var(--color-ink-900) 55%, transparent);
   }
 
   .model-badge {
