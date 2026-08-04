@@ -1,9 +1,20 @@
+// Authoritative source for the three model colors — also mirrored as
+// --color-model-jail/taskforce/wso in packages/web/src/app.css's @theme block
+// (Tailwind/CSS can't read this .ts file directly, and Satori bake scripts /
+// MapLibre paint expressions consume these hex values directly). Keep the two
+// in sync by hand if these ever change.
 export const MODEL_COLORS: Record<string, string> = {
   "Jail Enforcement Model": "#BE6079",
   "Task Force Model": "#3C97E2",
   "Warrant Service Officer": "#5E9148",
 };
 
+// NOTE: white text on these three backgrounds (as used by .model-badge in
+// app.css) checks at 4.09:1 (jail), 3.13:1 (taskforce), 3.74:1 (wso) against
+// WCAG AA's 4.5:1 normal-text threshold — all three fail for small badge
+// text. Pre-existing, not introduced by the UI revamp; flagged here rather
+// than silently changed, since these colors are load-bearing for map/legend/
+// chart comprehension and changing them is out of scope for this pass.
 export const MODEL_TEXT_COLORS: Record<string, string> = {
   "Jail Enforcement Model": "#ffffff",
   "Task Force Model": "#ffffff",

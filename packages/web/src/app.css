@@ -1,9 +1,64 @@
-@import url("https://fonts.googleapis.com/css2?family=Bitter:wght@700;900&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap");
+/* IBM Plex Mono is only needed by the pixel-fixed /video/surge bake route
+   (routes/video/surge/+page.svelte) — not self-hosted since it's a single,
+   narrowly-scoped consumer. Bitter/Inter (used sitewide) are self-hosted below
+   via @fontsource instead of Google Fonts, so the main site doesn't take a
+   third-party font request. */
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap");
+@import "@fontsource/bitter/700.css";
+@import "@fontsource/bitter/900.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
 @import "maplibre-gl/dist/maplibre-gl.css";
 @import "tailwindcss";
 
 @theme {
   --font-serif: "Bitter", Georgia, serif;
+
+  /* Breakpoints — deliberate 4-step set replacing the old single sm:640px.
+     sm moves to 480px (small/large phone split); this is a global-blast-radius
+     change from the previous default, since every existing sm: usage in the
+     codebase now triggers 160px earlier. */
+  --breakpoint-sm: 30rem; /* 480px */
+  --breakpoint-md: 48rem; /* 768px */
+  --breakpoint-lg: 64rem; /* 1024px */
+  --breakpoint-xl: 80rem; /* 1280px */
+
+  /* Fluid type scale — clamp()-based so headline/body sizes step smoothly
+     across the 360-430px phone-width range instead of jumping once at a
+     single breakpoint. */
+  --text-display: clamp(2rem, 1.5rem + 2.2vw, 3.5rem);
+  --text-h1: clamp(1.5rem, 1.3rem + 0.9vw, 2.25rem);
+  --text-h2: clamp(1.25rem, 1.15rem + 0.5vw, 1.625rem);
+  --text-h3: 1.125rem;
+  --text-body-lg: 1.0625rem;
+  --text-body: 0.9375rem;
+  --text-caption: 0.8125rem;
+
+  /* Warm "documentary editorial" neutral ramp — replaces the cool
+     Tailwind stone/slate defaults used ambiently across the site.
+     Contrast checked against --color-paper-50 (WCAG AA, 4.5:1 normal text):
+     ink-900 15.5:1, ink-700 9.2:1 — safe for any text size, any paper-*
+     background. ink-500 is 4.55:1 on paper-50 (passes, barely) but only
+     4.17:1 on paper-100 (fails AA for normal-size text) — restrict ink-500
+     to paper-50 backgrounds, or to large text (≥18.66px bold / 24px) on
+     paper-100. --color-paper-200 is a *decorative* hairline only (1.25:1
+     against paper-50 — well under the 3:1 non-text-contrast guidance for
+     meaningful UI boundaries); functional element borders (inputs, buttons,
+     card outlines that need to read as identifiable controls) should use
+     ink-500 at reduced opacity instead, e.g. color-mix(in srgb, var(--color-ink-500) 45%, transparent). */
+  --color-paper-50: #fbf8f3;
+  --color-paper-100: #f4eee3;
+  --color-paper-200: #e8dfcc;
+  --color-ink-900: #241f16;
+  --color-ink-700: #4a4335;
+  --color-ink-500: #7a7160;
+
+  /* Sparing accent — pull-quotes, active filter chips, "new/recent" markers.
+     Absorbs the ad hoc orange (#e8792b) that was previously hardcoded
+     independently in SurgeTimeline.svelte and NationalMap's "newOld" mode;
+     same purpose (highlighting recency/change), one token now. */
+  --color-accent-clay: #b5502c;
 }
 
 @layer base {
@@ -12,6 +67,10 @@
     --staging-banner-height: 0px; /* overridden inline on non-prod stages */
     --color-navy: #1e3a5f;
     --color-navy-light: #2d5282;
+    /* KEEP IN SYNC WITH packages/web/src/lib/colors.ts (MODEL_COLORS) — that
+       file is the authoritative source (also consumed by MapLibre paint
+       expressions and Satori bake scripts, which can't read CSS custom
+       properties), these three mirror it for Tailwind/CSS usage. */
     --color-model-jail: #BE6079;
     --color-model-taskforce: #3C97E2;
     --color-model-wso: #5E9148;
@@ -20,20 +79,29 @@
     --font-news-serif: Georgia, "Times New Roman", serif;
   }
 
-  @media (min-width: 640px) {
+  @media (min-width: 480px) {
     :root {
       --site-header-height: 3.5rem; /* desktop: single row = 56px */
     }
   }
 
   body {
-    @apply bg-stone-50 font-sans text-slate-900 antialiased;
+    @apply font-sans antialiased;
+    background-color: var(--color-paper-50);
+    color: var(--color-ink-900);
     font-family: "Inter", system-ui, sans-serif;
     overflow-x: hidden;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .page-fade,
+    .page-fade--loading {
+      animation-duration: 0.001ms !important;
+    }
+  }
+
   input, select, textarea {
-    accent-color: #475569; /* slate-600 — prevents model pink leaking into native form controls */
+    accent-color: var(--color-ink-700); /* prevents model pink leaking into native form controls */
   }
 
   h1, h2, h3 {
@@ -41,15 +109,21 @@
   }
 
   a {
-    @apply font-semibold text-slate-600 underline decoration-slate-300 underline-offset-2;
+    @apply font-semibold underline underline-offset-2;
+    color: var(--color-ink-700);
+    text-decoration-color: var(--color-paper-200);
   }
 
   a:hover {
-    @apply text-slate-900 decoration-slate-500;
+    color: var(--color-ink-900);
+    text-decoration-color: var(--color-ink-500);
   }
 
   a:focus-visible {
-    @apply outline-none ring-2 ring-slate-500 ring-offset-2;
+    @apply outline-none ring-2 ring-offset-2;
+    /* --color-ink-700 (#4a4335) on --color-paper-50 (#fbf8f3) checks ~7.3:1 —
+       comfortably clears WCAG AA for a focus indicator. */
+    --tw-ring-color: var(--color-ink-700);
   }
 
   /* Header and footer links override the global blue */
