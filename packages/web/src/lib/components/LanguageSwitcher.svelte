@@ -22,13 +22,13 @@
   }
 </script>
 
-<div class="flex items-center gap-2 text-xs uppercase tracking-wider text-white {extraClass}" aria-label={m.lang_toggle_aria()}>
+<div class="flex items-center gap-2 text-xs uppercase tracking-wider {extraClass}" aria-label={m.lang_toggle_aria()}>
   {#each locales as l, i}
-    {#if i > 0}<span aria-hidden="true" class="text-white/30">·</span>{/if}
+    {#if i > 0}<span aria-hidden="true" class="text-ink-500">·</span>{/if}
     <a
       href={hrefFor(l)}
       on:click={() => rememberLocale(l)}
-      class={l === locale ? "font-semibold text-white no-underline" : "text-white/50 no-underline hover:text-white"}
+      class={l === locale ? "font-semibold text-ink-900 no-underline" : "text-ink-700 no-underline hover:text-ink-900"}
       aria-current={l === locale ? "true" : undefined}
       hreflang={l}
       rel="alternate"

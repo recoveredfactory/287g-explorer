@@ -276,8 +276,8 @@
   {/if}
   {#if !isVideoRoute}
   <header
-    class="sticky z-50 border-b border-black/20 backdrop-blur"
-    style="top: var(--staging-banner-height); background-color: #191919;"
+    class="sticky z-50 border-b backdrop-blur"
+    style="top: var(--staging-banner-height); background-color: var(--color-paper-100); border-color: var(--color-paper-200);"
   >
     <div class="mx-auto max-w-6xl px-4 sm:px-6">
       <!-- Mobile: two rows (logo+lang / nav links). Desktop: single row.
@@ -296,7 +296,8 @@
         <div class="flex items-center justify-between sm:contents">
           <a
             href={localizeHref("/")}
-            class="font-serif text-base font-bold tracking-tight text-white no-underline hover:no-underline sm:text-lg"
+            class="font-serif text-base font-bold tracking-tight no-underline hover:no-underline sm:text-lg"
+            style="color: var(--color-ink-900);"
           >
             {siteName}
           </a>
@@ -308,31 +309,31 @@
           <nav class="flex items-center gap-5 text-sm font-semibold sm:ml-8">
             <a
               href={localizeHref("/")}
-              class="no-underline {isNavActive('/', basePath) ? 'text-white underline underline-offset-4 decoration-2' : 'text-white/60 hover:text-white'}"
+              class="no-underline {isNavActive('/', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
               aria-current={isNavActive('/', basePath) ? 'page' : undefined}
             ><span class="sm:hidden">{m.nav_map_short()}</span><span class="hidden sm:inline">{m.nav_map()}</span></a>
             <a
               href={localizeHref("/states")}
-              class="no-underline {isNavActive('/states', basePath) ? 'text-white underline underline-offset-4 decoration-2' : 'text-white/60 hover:text-white'}"
+              class="no-underline {isNavActive('/states', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
               aria-current={isNavActive('/states', basePath) ? 'page' : undefined}
             >{m.nav_states()}</a>
             <a
               href={localizeHref("/glossary")}
-              class="no-underline {isNavActive('/glossary', basePath) ? 'text-white underline underline-offset-4 decoration-2' : 'text-white/60 hover:text-white'}"
+              class="no-underline {isNavActive('/glossary', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
               aria-current={isNavActive('/glossary', basePath) ? 'page' : undefined}
             >{m.nav_glossary()}</a>
             <a
               href={localizeHref("/methodology")}
-              class="no-underline {isNavActive('/methodology', basePath) ? 'text-white underline underline-offset-4 decoration-2' : 'text-white/60 hover:text-white'}"
+              class="no-underline {isNavActive('/methodology', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
               aria-current={isNavActive('/methodology', basePath) ? 'page' : undefined}
             >{m.nav_methodology()}</a>
             <a
               href={localizeHref("/about")}
-              class="no-underline {isNavActive('/about', basePath) ? 'text-white underline underline-offset-4 decoration-2' : 'text-white/60 hover:text-white'}"
+              class="no-underline {isNavActive('/about', basePath) ? 'text-ink-900 underline underline-offset-4 decoration-2' : 'text-ink-700 hover:text-ink-900'}"
               aria-current={isNavActive('/about', basePath) ? 'page' : undefined}
             >{m.nav_about()}</a>
           </nav>
-          <LanguageSwitcher {hrefFor} extraClass="ml-auto hidden border-l border-white/20 pl-5 sm:flex" />
+          <LanguageSwitcher {hrefFor} extraClass="ml-auto hidden border-l border-paper-200 pl-5 sm:flex" />
         </div>
 
       </div>
@@ -342,38 +343,39 @@
 
   {#if isEs && !isVideoRoute}
     <p
-      class="mx-auto max-w-6xl px-4 py-2 text-xs italic text-slate-500 sm:px-6"
+      class="mx-auto max-w-6xl px-4 py-2 text-xs italic sm:px-6"
+      style="color: var(--color-ink-700);"
       role="note"
     >
       {m.source_material_notice()}
-      <a href={localizeHref("/methodology")} class="text-slate-600 underline">{m.nav_methodology()}</a>.
+      <a href={localizeHref("/methodology")} class="underline" style="color: var(--color-ink-900);">{m.nav_methodology()}</a>.
     </p>
   {/if}
 
   <slot />
 
   {#if !isVideoRoute}
-  <footer class="mt-16 border-t border-black/20 px-4 py-8 text-sm" style="background-color: #191919; color: rgba(255,255,255,0.6);">
+  <footer class="mt-16 border-t px-4 py-8 text-sm" style="background-color: var(--color-paper-100); border-color: var(--color-paper-200); color: var(--color-ink-700);">
     <div class="mx-auto max-w-6xl space-y-3 text-left sm:text-center">
       <p>
-        <span class="font-semibold text-white">{siteName}</span>
+        <span class="font-semibold" style="color: var(--color-ink-900);">{siteName}</span>
         {m.footer_tagline_after_name()}
       </p>
       <p>
-        <a href={localizeHref("/")} class="text-white/60 hover:text-white">{m.nav_map()}</a>
-        <span class="mx-1.5 text-white/30">·</span>
-        <a href={localizeHref("/glossary")} class="text-white/60 hover:text-white">{m.nav_glossary()}</a>
-        <span class="mx-1.5 text-white/30">·</span>
-        <a href={localizeHref("/methodology")} class="text-white/60 hover:text-white">{m.footer_methodology()}</a>
-        <span class="mx-1.5 text-white/30">·</span>
-        <a href={localizeHref("/about")} class="text-white/60 hover:text-white">{m.footer_about()}</a>
+        <a href={localizeHref("/")} class="text-ink-700 hover:text-ink-900">{m.nav_map()}</a>
+        <span class="mx-1.5 text-ink-500">·</span>
+        <a href={localizeHref("/glossary")} class="text-ink-700 hover:text-ink-900">{m.nav_glossary()}</a>
+        <span class="mx-1.5 text-ink-500">·</span>
+        <a href={localizeHref("/methodology")} class="text-ink-700 hover:text-ink-900">{m.footer_methodology()}</a>
+        <span class="mx-1.5 text-ink-500">·</span>
+        <a href={localizeHref("/about")} class="text-ink-700 hover:text-ink-900">{m.footer_about()}</a>
       </p>
-      <p class="text-xs" style="color: rgba(255,255,255,0.35);">
+      <p class="text-xs" style="color: var(--color-ink-500);">
         {m.footer_credit_prefix()}
-        <a href="https://vsr.recoveredfactory.net/en" target="_blank" rel="noreferrer" class="hover:text-white/60" style="color: rgba(255,255,255,0.45);">{m.footer_credit_org_name()}</a>.
+        <a href="https://vsr.recoveredfactory.net/en" target="_blank" rel="noreferrer" class="hover:text-ink-900" style="color: var(--color-ink-700);">{m.footer_credit_org_name()}</a>.
         {m.footer_credit_suffix()}
       </p>
-      <p class="text-xs" style="color: rgba(255,255,255,0.3);">
+      <p class="text-xs" style="color: var(--color-ink-500);">
         {m.footer_build()} {buildStamp}
       </p>
     </div>
