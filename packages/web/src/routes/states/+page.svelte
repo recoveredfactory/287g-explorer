@@ -132,7 +132,11 @@
 
   $: q = query.trim().toLowerCase();
 
-  $: filteredStates = data.states.filter((s) => !q || s.stateName.toLowerCase().includes(q) || s.abbr.toLowerCase().includes(q));
+  // Abbr match is exact (not substring) — abbr is only 2 letters, so a
+  // substring match against a short query matched almost every state
+  // (e.g. "t" ⊂ "TX", "UT", "MT", "CT"...) and the States group showed up
+  // for nearly any agency search, not just actual state searches.
+  $: filteredStates = data.states.filter((s) => !q || s.stateName.toLowerCase().includes(q) || s.abbr.toLowerCase() === q);
   $: filteredAgenciesAll = data.agencies.filter((a) =>
     !q || a.name.toLowerCase().includes(q) || a.state.toLowerCase().includes(q),
   );
